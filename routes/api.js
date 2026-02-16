@@ -1466,10 +1466,7 @@ router.delete("/coupons/:id", authenticate, async (req, res) => {
 
 // --- POS (Point of Sale) ---
 // const Payment = require('../models/Payment');
-const Order = require('../models/Order');
-const OrderItem = require('../models/OrderItem');
-const Product = require('../models/Product');
-const Customer = require('../models/Customer');
+
 
 // Create POS Order with Payment tracking
 router.post("/pos/orders", authenticate, async (req, res) => {
