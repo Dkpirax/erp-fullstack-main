@@ -61,7 +61,7 @@ export function POSInterface() {
 
     // Dynamic Categories
     const categories = useMemo(() => {
-        const uniqueCategories = Array.from(new Set(PRODUCTS.map(p => p.category).filter(Boolean)));
+        const uniqueCategories = Array.from(new Set(PRODUCTS.map(p => p.category).filter((c): c is string => !!c)));
         return ["All", ...uniqueCategories.sort()];
     }, [PRODUCTS]);
 

@@ -58,7 +58,7 @@ const startServer = async () => {
 
         // Sync database models
         console.log('🔄 Syncing database models...');
-        await sequelize.sync({ alter: true });
+        await sequelize.sync({ alter: false }); // alter:true causes ER_TOO_MANY_KEYS over time
         console.log('✅ Database models synced.');
 
         // Seed Admin User
@@ -96,6 +96,9 @@ const startServer = async () => {
 
         // Initialize socket logic
         require('./sockets/chat')(io);
+
+        // Make io accessible to our router
+        app.set('io', io);
 
         // Start server
         server.listen(PORT, () => {
