@@ -15,6 +15,7 @@ router.use('/finance', require('./finance')); // Handles /finance/accounts, etc.
 router.use('/coupons', require('./coupons')); // Handles /coupons
 router.use('/loyalty', require('./loyalty')); // Handles /loyalty/settings
 router.use('/social-media', require('./social')); // Handles /social-media/messages
+router.use('/chat', require('./chat'));   // Handles /chat/history/:userId, /chat/notifications
 router.use('/', require('./system'));     // Handles /health
 
 // DB Sync (Keep internal only or move to server.js? 

@@ -18,7 +18,9 @@ const models = [
     'Settings',
     'Company',
     'Branch',
-    'RolePermission'
+    'RolePermission',
+    'Message',
+    'Notification'
     // 'Payment' // TODO: Re-enable after fixing
 ];
 
@@ -79,6 +81,20 @@ if (db.Company && db.Branch) {
 if (db.Branch && db.User) {
     db.Branch.hasMany(db.User, { foreignKey: 'branch_id' });
     db.User.belongsTo(db.Branch, { foreignKey: 'branch_id' });
+}
+
+// User <-> Message
+if (db.User && db.Message) {
+    db.Message.belongsTo(db.User, { as: 'Sender', foreignKey: 'sender_id' });
+    db.Message.belongsTo(db.User, { as: 'Receiver', foreignKey: 'receiver_id' });
+    db.User.hasMany(db.Message, { as: 'SentMessages', foreignKey: 'sender_id' });
+    db.User.hasMany(db.Message, { as: 'ReceivedMessages', foreignKey: 'receiver_id' });
+}
+
+// User <-> Notification
+if (db.User && db.Notification) {
+    db.Notification.belongsTo(db.User, { foreignKey: 'user_id' });
+    db.User.hasMany(db.Notification, { foreignKey: 'user_id' });
 }
 
 // Payment <-> Order

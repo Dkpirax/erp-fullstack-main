@@ -401,3 +401,49 @@ export const getProducts = async (): Promise<Product[]> => {
     const response = await api.get<{ products: Product[] }>('/products');
     return response.data.products;
 };
+
+// Chat API
+export interface Message {
+    id: number;
+    sender_id: number;
+    receiver_id: number;
+    content: string;
+    type: 'TEXT' | 'IMAGE' | 'FILE';
+    is_read: boolean;
+    createdAt: string;
+    Sender?: {
+        id: number;
+        username: string;
+        full_name: string;
+    }
+}
+
+export interface Notification {
+    id: number;
+    user_id: number;
+    type: string;
+    content: string;
+    is_read: boolean;
+    reference_id?: number;
+    link?: string;
+    createdAt: string;
+}
+
+export const getChatHistory = async (userId: number): Promise<Message[]> => {
+    const response = await api.get<Message[]>(`/chat/history/${userId}`);
+    return response.data;
+};
+
+export const getConversations = async (): Promise<User[]> => {
+    const response = await api.get<User[]>('/chat/conversations');
+    return response.data;
+};
+
+export const getNotifications = async (): Promise<Notification[]> => {
+    const response = await api.get<Notification[]>('/chat/notifications');
+    return response.data;
+};
+
+export const markNotificationRead = async (id: number): Promise<void> => {
+    await api.put(`/chat/notifications/${id}/read`);
+};

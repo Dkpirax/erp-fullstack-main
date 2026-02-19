@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import { Navbar } from "./Navbar";
 import { Container } from "react-bootstrap";
+import { ChatWidget } from "../chat/ChatWidget";
 
 export function Layout() {
     const [showSidebar, setShowSidebar] = useState(false);
@@ -19,6 +20,7 @@ export function Layout() {
                         <Outlet />
                     </Container>
                 </main>
+                <ChatWidget />
             </div>
         </div>
     );

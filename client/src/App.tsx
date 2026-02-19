@@ -59,6 +59,7 @@ import { PrivilegeManagement } from "./pages/admin/PrivilegeManagement";
 import { ReportsPage } from "./pages/ReportsPage";
 import { PaymentReports } from "./pages/reports/PaymentReports";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { SocketProvider } from "./context/SocketContext";
 
 function ProtectedRoute({ children }: { children: React.ReactElement }) {
   const { isAuthenticated, loading } = useAuth();
@@ -84,83 +85,85 @@ function ProtectedRoute({ children }: { children: React.ReactElement }) {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
+      <SocketProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<LoginPage />} />
 
-          <Route path="/" element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }>
-            <Route index element={<Dashboard />} />
-            <Route path="profile" element={<ProfilePage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="admin/users" element={<UserManagement />} />
-            <Route path="admin/organization" element={<OrganizationSettings />} />
-            <Route path="admin/privileges" element={<PrivilegeManagement />} />
-            <Route path="reports" element={<ReportsPage />} />
-            <Route path="reports/payments" element={<PaymentReports />} />
+            <Route path="/" element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }>
+              <Route index element={<Dashboard />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="admin/users" element={<UserManagement />} />
+              <Route path="admin/organization" element={<OrganizationSettings />} />
+              <Route path="admin/privileges" element={<PrivilegeManagement />} />
+              <Route path="reports" element={<ReportsPage />} />
+              <Route path="reports/payments" element={<PaymentReports />} />
 
-            <Route path="finance">
-              <Route index element={<FinanceDashboard />} />
-              <Route path="accounts" element={<ChartOfAccounts />} />
-              <Route path="ledger" element={<GeneralLedger />} />
-              <Route path="payable" element={<AccountsPayable />} />
-              <Route path="receivable" element={<AccountsReceivable />} />
+              <Route path="finance">
+                <Route index element={<FinanceDashboard />} />
+                <Route path="accounts" element={<ChartOfAccounts />} />
+                <Route path="ledger" element={<GeneralLedger />} />
+                <Route path="payable" element={<AccountsPayable />} />
+                <Route path="receivable" element={<AccountsReceivable />} />
+              </Route>
+              <Route path="supply-chain">
+                <Route index element={<SupplyChainDashboard />} />
+                <Route path="inventory" element={<InventoryList />} />
+                <Route path="suppliers" element={<SupplierList />} />
+              </Route>
+              <Route path="hr">
+                <Route index element={<HRDashboard />} />
+                <Route path="employees" element={<EmployeeList />} />
+                <Route path="payroll" element={<PayrollProcessing />} />
+              </Route>
+              <Route path="crm">
+                <Route index element={<CRMDashboard />} />
+                <Route path="customers" element={<CustomerList />} />
+                <Route path="pipeline" element={<SalesPipeline />} />
+              </Route>
+              <Route path="manufacturing">
+                <Route index element={<ManufacturingDashboard />} />
+                <Route path="work-orders" element={<WorkOrderList />} />
+                <Route path="boms" element={<BOMList />} />
+              </Route>
+              <Route path="pos">
+                <Route index element={<POSInterface />} />
+                <Route path="history" element={<SalesHistory />} />
+                <Route path="session" element={<SessionManagement />} />
+                <Route path="loyalty-coupons" element={<LoyaltyAndCoupons />} />
+                <Route path="receipt/:id" element={<ReceiptPage />} />
+              </Route>
+              <Route path="daraz">
+                <Route index element={<DarazDashboard />} />
+                <Route path="products" element={<DarazProducts />} />
+                <Route path="orders" element={<DarazOrders />} />
+                <Route path="settings" element={<DarazSettings />} />
+              </Route>
+              <Route path="social-media">
+                <Route index element={<SocialMediaDashboard />} />
+                <Route path="campaigns" element={<Campaigns />} />
+                <Route path="inbox" element={<UnifiedInbox />} />
+                <Route path="settings" element={<SocialMediaSettings />} />
+              </Route>
+              <Route path="woocommerce">
+                <Route index element={<WooCommerceDashboard />} />
+                <Route path="products" element={<WooCommerceProducts />} />
+                <Route path="products/add" element={<WooCommerceProductAdd />} />
+                <Route path="products/:id" element={<WooCommerceProductView />} />
+                <Route path="products/:id/edit" element={<WooCommerceProductEdit />} />
+                <Route path="orders" element={<WooCommerceOrders />} />
+                <Route path="customers" element={<WooCommerceCustomers />} />
+                <Route path="settings" element={<WooCommerceSettings />} />
+              </Route>
             </Route>
-            <Route path="supply-chain">
-              <Route index element={<SupplyChainDashboard />} />
-              <Route path="inventory" element={<InventoryList />} />
-              <Route path="suppliers" element={<SupplierList />} />
-            </Route>
-            <Route path="hr">
-              <Route index element={<HRDashboard />} />
-              <Route path="employees" element={<EmployeeList />} />
-              <Route path="payroll" element={<PayrollProcessing />} />
-            </Route>
-            <Route path="crm">
-              <Route index element={<CRMDashboard />} />
-              <Route path="customers" element={<CustomerList />} />
-              <Route path="pipeline" element={<SalesPipeline />} />
-            </Route>
-            <Route path="manufacturing">
-              <Route index element={<ManufacturingDashboard />} />
-              <Route path="work-orders" element={<WorkOrderList />} />
-              <Route path="boms" element={<BOMList />} />
-            </Route>
-            <Route path="pos">
-              <Route index element={<POSInterface />} />
-              <Route path="history" element={<SalesHistory />} />
-              <Route path="session" element={<SessionManagement />} />
-              <Route path="loyalty-coupons" element={<LoyaltyAndCoupons />} />
-              <Route path="receipt/:id" element={<ReceiptPage />} />
-            </Route>
-            <Route path="daraz">
-              <Route index element={<DarazDashboard />} />
-              <Route path="products" element={<DarazProducts />} />
-              <Route path="orders" element={<DarazOrders />} />
-              <Route path="settings" element={<DarazSettings />} />
-            </Route>
-            <Route path="social-media">
-              <Route index element={<SocialMediaDashboard />} />
-              <Route path="campaigns" element={<Campaigns />} />
-              <Route path="inbox" element={<UnifiedInbox />} />
-              <Route path="settings" element={<SocialMediaSettings />} />
-            </Route>
-            <Route path="woocommerce">
-              <Route index element={<WooCommerceDashboard />} />
-              <Route path="products" element={<WooCommerceProducts />} />
-              <Route path="products/add" element={<WooCommerceProductAdd />} />
-              <Route path="products/:id" element={<WooCommerceProductView />} />
-              <Route path="products/:id/edit" element={<WooCommerceProductEdit />} />
-              <Route path="orders" element={<WooCommerceOrders />} />
-              <Route path="customers" element={<WooCommerceCustomers />} />
-              <Route path="settings" element={<WooCommerceSettings />} />
-            </Route>
-          </Route>
-        </Routes>
-      </Router>
+          </Routes>
+        </Router>
+      </SocketProvider>
     </AuthProvider>
   );
 }

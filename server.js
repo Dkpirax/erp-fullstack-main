@@ -50,7 +50,9 @@ const startServer = async () => {
         await sequelize.authenticate();
         console.log('✅ Database connection established successfully.');
 
-        const User = require('./models/User'); // Add User model
+        // Initialize models and associations
+        const { User } = require('./models/index'); // This loads all models and sets up associations
+
 
         // ...
 
@@ -81,8 +83,22 @@ const startServer = async () => {
             console.error('⚠️ Failed to seed admin user:', seedError);
         }
 
+        // Create HTTP server and initialize Socket.IO
+        const http = require('http');
+        const server = http.createServer(app);
+        const { Server } = require("socket.io");
+        const io = new Server(server, {
+            cors: {
+                origin: "*", // allow all or specify client URL
+                methods: ["GET", "POST"]
+            }
+        });
+
+        // Initialize socket logic
+        require('./sockets/chat')(io);
+
         // Start server
-        app.listen(PORT, () => {
+        server.listen(PORT, () => {
             console.log(`\n╔════════════════════════════════════════════════════════╗`);
             console.log(`║     ERP FULLSTACK APPLICATION - RUNNING               ║`);
             console.log(`╚════════════════════════════════════════════════════════╝`);
