@@ -50,6 +50,7 @@ xcopy "models" "deployment\models\" /E /I
 xcopy "routes" "deployment\routes\" /E /I
 xcopy "middleware" "deployment\middleware\" /E /I
 xcopy "scripts" "deployment\scripts\" /E /I
+xcopy "sockets" "deployment\sockets\" /E /I
 
 REM Copy Admin Creation Script specifically if not in scripts
 if exist "create_admin.js" copy "create_admin.js" "deployment\"
