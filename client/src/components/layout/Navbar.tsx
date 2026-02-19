@@ -20,8 +20,14 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
     useEffect(() => {
         if (user) {
             getNotifications().then(data => {
-                setNotifications(data);
-                setUnreadCount(data.filter(n => !n.is_read).length);
+                if (Array.isArray(data)) {
+                    setNotifications(data);
+                    setUnreadCount(data.filter(n => !n.is_read).length);
+                } else {
+                    console.error("Failed to load notifications (invalid format):", data);
+                    setNotifications([]);
+                    setUnreadCount(0);
+                }
             }).catch(console.error);
         }
     }, [user]);
@@ -31,8 +37,10 @@ export function Navbar({ onToggleSidebar }: NavbarProps) {
 
         socket.on('notification', () => {
             getNotifications().then(data => {
-                setNotifications(data);
-                setUnreadCount(data.filter(n => !n.is_read).length);
+                if (Array.isArray(data)) {
+                    setNotifications(data);
+                    setUnreadCount(data.filter(n => !n.is_read).length);
+                }
             });
         });
 
