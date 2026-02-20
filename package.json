@@ -12,7 +12,8 @@
         "client": "cd client && npm run dev",
         "create-admin": "node scripts/create_admin.js",
         "sync-db": "node scripts/sync_database.js",
-        "reset-db": "node scripts/reset_db_and_seed.js"
+        "reset-db": "node scripts/reset_db_and_seed.js",
+        "wa-sim": "node scripts/wa_simulator.js"
     },
     "keywords": [
         "erp",
