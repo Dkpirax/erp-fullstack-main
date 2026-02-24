@@ -20,7 +20,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (user && token) {
             // Initialize socket
             // Assuming the backend is on port 3000 based on server.js
-            const serverUrl = import.meta.env.VITE_API_SOCKET_URL || 'http://localhost:3000';
+            const serverUrl = import.meta.env.VITE_API_SOCKET_URL || '';
 
             const newSocket = io(serverUrl, {
                 auth: {
