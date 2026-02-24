@@ -83,7 +83,7 @@ const startExpressServer = async () => {
     });
 
     // Initialize socket logic
-    require('../sockets/chat')(io);
+    require('./sockets/chat')(io);
     app.set('io', io);
 
     return new Promise((resolve) => {

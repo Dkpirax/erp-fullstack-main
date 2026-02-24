@@ -1,0 +1,10 @@
+const express = require('express');
+const router = express.Router();
+// No auth required for health check
+
+// --- System ---
+router.get("/health", (req, res) => {
+    res.json({ status: "ok", backend: "node", database: "connected" });
+});
+
+module.exports = router;

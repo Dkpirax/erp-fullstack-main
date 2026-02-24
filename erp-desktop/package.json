@@ -5,6 +5,7 @@
   "scripts": {
     "start": "electron .",
     "dev": "concurrently \"nodemon server.js\" \"electron .\"",
+    "prebuild": "node copy.js",
     "build": "electron-builder --win"
   },
   "build": {
