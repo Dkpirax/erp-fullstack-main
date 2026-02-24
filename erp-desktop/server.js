@@ -30,8 +30,8 @@ app.get("/api/health", (req, res) => {
 const initDB = async () => {
     try {
         await sequelize.authenticate();
-        // Here we require the models. We will point to the parent directory's models.
-        const { User } = require('../models/index');
+        // Here we require the models. We will point to the copied models folder.
+        const { User } = require('./models/index');
 
         console.log('🔄 Syncing SQLite database models...');
         await sequelize.sync({ alter: true });
@@ -63,8 +63,8 @@ const initDB = async () => {
 const startExpressServer = async () => {
     await initDB();
 
-    // Require API Routes from parent project
-    const apiRoutes = require('../routes/api');
+    // Require API Routes locally
+    const apiRoutes = require('./routes/api');
     app.use("/api/v1", apiRoutes);
 
     // All other routes serve the React app

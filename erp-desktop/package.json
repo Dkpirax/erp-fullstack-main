@@ -23,9 +23,9 @@
       "server.js",
       "config/**/*",
       "node_modules/**/*",
-      "../routes/**/*",
-      "../models/**/*",
-      "../sockets/**/*"
+      "routes/**/*",
+      "models/**/*",
+      "sockets/**/*"
     ]
   },
   "keywords": [],
