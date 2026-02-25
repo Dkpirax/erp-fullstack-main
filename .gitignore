@@ -2,6 +2,9 @@ node_modules
 erp-desktop/node_modules
 erp-desktop/release
 client/node_modules
+client/build
+pos_desktop/node_modules
+pos_desktop/build
 .env
 dist
 build

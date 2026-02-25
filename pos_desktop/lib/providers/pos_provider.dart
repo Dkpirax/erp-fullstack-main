@@ -15,6 +15,9 @@ class PosProvider with ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
+  bool _isLoggedIn = false;
+  bool get isLoggedIn => _isLoggedIn;
+
   String _selectedCategory = 'Burger';
   String get selectedCategory => _selectedCategory;
 
@@ -22,8 +25,27 @@ class PosProvider with ChangeNotifier {
   double get tax => subtotal * 0.10;
   double get total => subtotal + tax;
 
-  PosProvider() {
-    fetchProducts();
+  PosProvider();
+
+  Future<bool> login(String username, String password) async {
+    _isLoading = true;
+    notifyListeners();
+    final success = await _apiService.login(username, password);
+    _isLoading = false;
+    if (success) {
+      _isLoggedIn = true;
+      await fetchProducts();
+    }
+    notifyListeners();
+    return success;
+  }
+
+  void logout() {
+    _isLoggedIn = false;
+    _products = [];
+    _cart = [];
+    _apiService.logout();
+    notifyListeners();
   }
 
   Future<void> fetchProducts() async {

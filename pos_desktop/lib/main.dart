@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'providers/pos_provider.dart';
-import 'screens/main_pos_screen.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   runApp(
@@ -41,7 +41,7 @@ class POSApp extends StatelessWidget {
         cardColor: const Color(0xFF2A2A3C),
         useMaterial3: true,
       ),
-      home: const MainPosScreen(),
+      home: const LoginScreen(),
     );
   }
 }
