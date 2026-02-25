@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/product.dart';
 import '../models/promo.dart';
+import '../models/order.dart';
 
 class ApiService {
   String baseUrl = 'http://localhost:3000/api/v1';
@@ -99,7 +100,7 @@ class ApiService {
         }
         
         try {
-          return productList.map((j) => Product.fromJson(j as Map<String, dynamic>)).toList();
+          return productList.map((j) => Product.fromJson(Map<String, dynamic>.from(j as Map))).toList();
         } catch (parseError) {
           lastError = 'Data parsing error: $parseError';
           print('Product parsing error: $parseError');
@@ -150,6 +151,35 @@ class ApiService {
     }
   }
 
+  Future<List<OrderModel>> fetchOrderHistory() async {
+    lastError = null;
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/pos/orders'),
+        headers: _authHeaders,
+      );
+      if (response.statusCode == 200) {
+        final dynamic decoded = json.decode(response.body);
+        List<dynamic> orderList;
+        if (decoded is List) {
+          orderList = decoded;
+        } else if (decoded is Map) {
+          final val = decoded['orders'] ?? decoded['data'] ?? decoded['items'];
+          orderList = val is List ? val : [];
+        } else {
+          orderList = [];
+        }
+        return orderList.map((j) => OrderModel.fromJson(Map<String, dynamic>.from(j as Map))).toList();
+      } else {
+        lastError = 'Failed to fetch history (${response.statusCode})';
+        return [];
+      }
+    } catch (e) {
+      lastError = 'History fetch error: $e';
+      return [];
+    }
+  }
+
   Future<List<Promo>> fetchPromos() async {
     lastError = null;
     try {
@@ -160,7 +190,7 @@ class ApiService {
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
         try {
-          return data.map((j) => Promo.fromJson(j as Map<String, dynamic>)).toList();
+          return data.map((j) => Promo.fromJson(Map<String, dynamic>.from(j as Map))).toList();
         } catch (parseError) {
           lastError = 'Promo parsing error: $parseError';
           return [];

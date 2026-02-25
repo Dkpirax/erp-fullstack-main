@@ -32,6 +32,15 @@ class PosProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // Printer logic removed to fix build error
+  String? _selectedPrinterName;
+  String? get selectedPrinterName => _selectedPrinterName;
+
+  void setSelectedPrinterName(String? name) {
+    _selectedPrinterName = name;
+    notifyListeners();
+  }
+
   // Promos
   List<Promo> _promos = [];
   List<Promo> get promos => _promos;
@@ -84,6 +93,7 @@ class PosProvider with ChangeNotifier {
       _isLoggedIn = true;
       await fetchProducts();
       await fetchPromos(); // load promos after login
+      await fetchOrderHistory(); // load history after login
     }
     notifyListeners();
     return success;
@@ -94,6 +104,7 @@ class PosProvider with ChangeNotifier {
     _products = [];
     _cart = [];
     _promos = [];
+    _orderHistory = [];
     _selectedPromo = null;
     _apiService.logout();
     notifyListeners();
@@ -119,6 +130,11 @@ class PosProvider with ChangeNotifier {
   Future<void> fetchPromos() async {
     _promos = await _apiService.fetchPromos();
     _promoError = _promos.isEmpty ? _apiService.lastError : null;
+    notifyListeners();
+  }
+
+  Future<void> fetchOrderHistory() async {
+    _orderHistory = await _apiService.fetchOrderHistory();
     notifyListeners();
   }
 
@@ -227,16 +243,8 @@ class PosProvider with ChangeNotifier {
     
     _isLoading = false;
     if (success) {
-      _orderHistory.insert(0, OrderModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        items: List.from(_cart),
-        subtotal: subtotal,
-        discount: discount,
-        tax: tax,
-        total: total,
-        paymentMethod: paymentMethod,
-        date: DateTime.now(),
-      ));
+      // Refresh history after successful checkout
+      await fetchOrderHistory();
       
       clearCart();
       removePromo();
