@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const foldersToCopy = ['routes', 'models', 'sockets', 'middleware'];
+const foldersToCopy = ['routes', 'models', 'sockets', 'middleware', 'whatsapp'];
 
 foldersToCopy.forEach(folder => {
     const src = path.join(__dirname, '..', folder);
