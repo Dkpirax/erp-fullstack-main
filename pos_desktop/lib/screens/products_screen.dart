@@ -224,7 +224,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                             ? ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
                                 child: Image.network(
-                                  imageUrl.startsWith('http') ? imageUrl : 'https://erp.reon.lk$imageUrl',
+                                  imageUrl.startsWith('http') ? imageUrl : '${provider.baseDomain}$imageUrl',
                                   fit: BoxFit.cover,
                                   errorBuilder: (c,e,s) => const Icon(Icons.broken_image, color: Colors.grey)),
                               )

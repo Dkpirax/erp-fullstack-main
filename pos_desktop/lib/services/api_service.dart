@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/product.dart';
 import '../models/promo.dart';
@@ -6,7 +7,46 @@ import '../models/order.dart';
 import '../models/supplier.dart';
 
 class ApiService {
-  String baseUrl = 'https://erp.reon.lk/api/v1';
+  String baseUrl = '';
+  
+  String get serverUrl {
+    if (baseUrl.trim().isEmpty) return '';
+    try {
+      final uri = Uri.parse(baseUrl);
+      return '${uri.scheme}://${uri.authority}';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  Future<void> loadConfig() async {
+    try {
+      final file = File('config.json');
+      if (await file.exists()) {
+        final contents = await file.readAsString();
+        final data = json.decode(contents);
+        if (data['baseUrl'] != null) {
+          baseUrl = data['baseUrl'];
+        }
+      }
+    } catch (e) {
+      print('Failed to load config: $e');
+    }
+  }
+
+  Future<void> _saveConfig(String url) async {
+    try {
+      final file = File('config.json');
+      await file.writeAsString(json.encode({'baseUrl': url}));
+    } catch (e) {
+      print('Failed to save config: $e');
+    }
+  }
+
+  void updateBaseUrl(String newUrl) {
+    baseUrl = newUrl;
+    _saveConfig(newUrl);
+  }
 
   String? _token;
   String _userRole = 'cashier'; // default
@@ -21,9 +61,7 @@ class ApiService {
 
   String? lastError;
 
-  void updateBaseUrl(String newUrl) {
-    baseUrl = newUrl;
-  }
+
 
   /// Login with username/password, stores JWT token.
   Future<bool> login(String username, String password) async {

@@ -14,6 +14,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _usernameController = TextEditingController(text: 'admin');
   final _passwordController = TextEditingController(text: 'admin');
+  final _urlController = TextEditingController();
   bool _isLoading = false;
   String? _errorMessage;
   bool _obscurePassword = true;
@@ -24,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _usernameController.dispose();
     _passwordController.dispose();
+    _urlController.dispose();
     super.dispose();
   }
 
@@ -133,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Sign in to continue',
+                            provider.serverUrl.isEmpty ? 'Initial Setup' : 'Sign in to continue',
                             style: TextStyle(color: Colors.grey[400], fontSize: 14),
                           ),
                         ],
@@ -141,117 +143,167 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 40),
 
-                    // Username
-                    Text('Username', style: TextStyle(color: Colors.grey[300], fontSize: 14, fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _usernameController,
-                      readOnly: provider.useOnScreenKeyboard,
-                      onTap: () {
-                        if (provider.useOnScreenKeyboard) {
-                          setState(() => _activeController = _usernameController);
-                        }
-                      },
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Enter username',
-                        hintStyle: TextStyle(color: Colors.grey[600]),
-                        prefixIcon: const Icon(Icons.person_outline, color: Colors.grey),
-                        filled: true,
-                        fillColor: const Color(0xFF1E1E2C),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFFF6B6B)),
-                        ),
-                      ),
-                      onSubmitted: (_) => _login(),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Password
-                    Text('Password', style: TextStyle(color: Colors.grey[300], fontSize: 14, fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      readOnly: provider.useOnScreenKeyboard,
-                      onTap: () {
-                        if (provider.useOnScreenKeyboard) {
-                          setState(() => _activeController = _passwordController);
-                        }
-                      },
-                      style: const TextStyle(color: Colors.white),
-                      decoration: InputDecoration(
-                        hintText: 'Enter password',
-                        hintStyle: TextStyle(color: Colors.grey[600]),
-                        prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                            color: Colors.grey,
+                    if (provider.serverUrl.isEmpty) ...[
+                      // Setup API URL
+                      Text('Server API URL', style: TextStyle(color: Colors.grey[300], fontSize: 14, fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _urlController,
+                        readOnly: provider.useOnScreenKeyboard,
+                        onTap: () {
+                          if (provider.useOnScreenKeyboard) {
+                            setState(() => _activeController = _urlController);
+                          }
+                        },
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'e.g. https://erp.reon.lk/api/v1',
+                          hintStyle: TextStyle(color: Colors.grey[600]),
+                          prefixIcon: const Icon(Icons.link, color: Colors.grey),
+                          filled: true,
+                          fillColor: const Color(0xFF1E1E2C),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
                           ),
-                          onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                        ),
-                        filled: true,
-                        fillColor: const Color(0xFF1E1E2C),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFFF6B6B)),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFFFF6B6B)),
+                          ),
                         ),
                       ),
-                      onSubmitted: (_) => _login(),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Error message
-                    if (_errorMessage != null)
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.red.withOpacity(0.3)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.error_outline, color: Colors.red, size: 16),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13))),
-                          ],
+                      const SizedBox(height: 28),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (_urlController.text.trim().isNotEmpty) {
+                              provider.updateServerUrl(_urlController.text.trim());
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF6B6B),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: const Text('Save URL & Continue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                         ),
                       ),
-
-                    const SizedBox(height: 28),
-
-                    // Login Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _login,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF6B6B),
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 0,
+                    ] else ...[
+                      // Username
+                      Text('Username', style: TextStyle(color: Colors.grey[300], fontSize: 14, fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _usernameController,
+                        readOnly: provider.useOnScreenKeyboard,
+                        onTap: () {
+                          if (provider.useOnScreenKeyboard) {
+                            setState(() => _activeController = _usernameController);
+                          }
+                        },
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Enter username',
+                          hintStyle: TextStyle(color: Colors.grey[600]),
+                          prefixIcon: const Icon(Icons.person_outline, color: Colors.grey),
+                          filled: true,
+                          fillColor: const Color(0xFF1E1E2C),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFFFF6B6B)),
+                          ),
                         ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                              )
-                            : const Text('Sign In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        onSubmitted: (_) => _login(),
                       ),
-                    ),
+                      const SizedBox(height: 20),
+
+                      // Password
+                      Text('Password', style: TextStyle(color: Colors.grey[300], fontSize: 14, fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        readOnly: provider.useOnScreenKeyboard,
+                        onTap: () {
+                          if (provider.useOnScreenKeyboard) {
+                            setState(() => _activeController = _passwordController);
+                          }
+                        },
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          hintText: 'Enter password',
+                          hintStyle: TextStyle(color: Colors.grey[600]),
+                          prefixIcon: const Icon(Icons.lock_outline, color: Colors.grey),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              color: Colors.grey,
+                            ),
+                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFF1E1E2C),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFFFF6B6B)),
+                          ),
+                        ),
+                        onSubmitted: (_) => _login(),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Error message
+                      if (_errorMessage != null)
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.red.withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline, color: Colors.red, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(_errorMessage!, style: const TextStyle(color: Colors.red, fontSize: 13))),
+                            ],
+                          ),
+                        ),
+
+                      const SizedBox(height: 28),
+
+                      // Login Button
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _login,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFFF6B6B),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Text('Sign In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

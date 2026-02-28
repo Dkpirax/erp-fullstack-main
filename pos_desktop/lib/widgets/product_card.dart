@@ -35,7 +35,7 @@ class ProductCard extends StatelessWidget {
                       ? Image.network(
                           product.imageUrl.startsWith('http') 
                               ? product.imageUrl 
-                              : 'https://erp.reon.lk${product.imageUrl}',
+                              : '${Provider.of<PosProvider>(context, listen: false).baseDomain}${product.imageUrl}',
                           fit: BoxFit.cover,
                           errorBuilder: (context, error, stackTrace) =>
                               _buildImagePlaceholder(),

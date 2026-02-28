@@ -207,7 +207,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     style: const TextStyle(color: Colors.white),
                                     decoration: InputDecoration(
                                       labelText: 'API Base URL',
-                                      hintText: 'https://erp.reon.lk/api/v1',
+                                      hintText: 'e.g. https://erp.reon.lk/api/v1',
                                       filled: true,
                                       fillColor: const Color(0xFF1E1E2C),
                                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

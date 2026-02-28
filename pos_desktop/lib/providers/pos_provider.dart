@@ -34,6 +34,8 @@ class PosProvider with ChangeNotifier {
   }
 
   String get serverUrl => _apiService.baseUrl;
+  String get baseDomain => _apiService.serverUrl;
+
   void updateServerUrl(String url) {
     _apiService.updateBaseUrl(url);
     notifyListeners();

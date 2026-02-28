@@ -4,7 +4,12 @@ import 'package:provider/provider.dart';
 import 'providers/pos_provider.dart';
 import 'screens/login_screen.dart';
 
-void main() {
+import 'services/api_service.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await ApiService().loadConfig();
+
   runApp(
     MultiProvider(
       providers: [
