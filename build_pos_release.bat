@@ -10,7 +10,17 @@ echo.
 
 cd /d "%PROJECT_DIR%"
 
-echo [1/2] Fetching dependencies...
+echo [1/3] Cleaning project...
+call flutter clean
+if %ERRORLEVEL% NEQ 0 (
+    echo.
+    echo ERROR: flutter clean failed.
+    pause
+    exit /b %ERRORLEVEL%
+)
+
+echo.
+echo [2/3] Fetching dependencies...
 call flutter pub get
 if %ERRORLEVEL% NEQ 0 (
     echo.
@@ -20,7 +30,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo [2/2] Building Windows release...
+echo [3/3] Building Windows release...
 call flutter build windows --release
 if %ERRORLEVEL% NEQ 0 (
     echo.
