@@ -138,7 +138,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                               const Divider(color: Colors.white10),
                                               _summaryRow('Subtotal', order.subtotal),
                                               if (order.discount > 0) _summaryRow('Discount', -order.discount, color: Colors.green),
-                                              _summaryRow('Tax (10%)', order.tax),
                                               const SizedBox(height: 8),
                                               Row(
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

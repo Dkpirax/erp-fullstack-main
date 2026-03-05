@@ -5,6 +5,8 @@ import '../models/promo.dart';
 import '../models/order.dart';
 import '../models/supplier.dart';
 import '../services/api_service.dart';
+import 'package:serial_port_win32/serial_port_win32.dart';
+import 'dart:typed_data';
 
 class PosProvider with ChangeNotifier {
   final ApiService _apiService = ApiService();
@@ -25,9 +27,6 @@ class PosProvider with ChangeNotifier {
   bool _useOnScreenKeyboard = false;
   bool get useOnScreenKeyboard => _useOnScreenKeyboard;
 
-  double _taxRatePercent = 10.0;
-  double get taxRatePercent => _taxRatePercent;
-
   void setUseOnScreenKeyboard(bool value) {
     _useOnScreenKeyboard = value;
     notifyListeners();
@@ -47,6 +46,75 @@ class PosProvider with ChangeNotifier {
   void setSelectedPrinterName(String? name) {
     _selectedPrinterName = name;
     notifyListeners();
+  }
+
+  // Scanner Settings
+  String? _selectedScannerPort;
+  String? get selectedScannerPort => _selectedScannerPort;
+  SerialPort? _activeSerialPort;
+
+  void setSelectedScannerPort(String? portName) {
+    if (_selectedScannerPort == portName) return;
+    _selectedScannerPort = portName;
+    _initializeSerialScanner();
+    notifyListeners();
+  }
+
+  List<String> getAvailableSerialPorts() {
+    try {
+      return SerialPort.getPorts();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  void _initializeSerialScanner() {
+    try {
+      if (_activeSerialPort != null) {
+        _activeSerialPort!.close();
+        _activeSerialPort = null;
+      }
+    } catch (e) {
+      print('Error closing port: $e');
+    }
+
+    if (_selectedScannerPort == null || _selectedScannerPort == 'None') return;
+
+    try {
+      final port = SerialPort(_selectedScannerPort!, baudrate: BaudRate.B9600);
+      port.open();
+      if (port.isOpened) {
+        _activeSerialPort = port;
+        _listenToSerial();
+      }
+    } catch (e) {
+      print('Failed to open serial port: $e');
+    }
+  }
+
+  void _listenToSerial() async {
+    if (_activeSerialPort == null) return;
+    
+    String buffer = '';
+    while (_activeSerialPort != null && _activeSerialPort!.isOpened) {
+      try {
+        final data = _activeSerialPort!.readBytes(1); // Read byte by byte for simplicity or use events
+        if (data.isNotEmpty) {
+           final char = String.fromCharCodes(data);
+           if (char == '\n' || char == '\r') {
+             if (buffer.isNotEmpty) {
+               addProductByBarcode(buffer.trim());
+               buffer = '';
+             }
+           } else {
+             buffer += char;
+           }
+        }
+      } catch (e) {
+        break;
+      }
+      await Future.delayed(const Duration(milliseconds: 10));
+    }
   }
 
   // Promos
@@ -86,8 +154,7 @@ class PosProvider with ChangeNotifier {
 
   double get subtotal => _cart.fold(0, (sum, item) => sum + item.totalPrice);
   double get discount => _selectedPromo?.calculateDiscount(subtotal) ?? 0;
-  double get tax => (subtotal - discount) * (_taxRatePercent / 100);
-  double get total => subtotal - discount + tax;
+  double get total => subtotal - discount;
 
   PosProvider();
 
@@ -102,7 +169,6 @@ class PosProvider with ChangeNotifier {
       await fetchPromos();
       await fetchOrderHistory();
       await fetchSuppliers();
-      await fetchSettings();
     }
     notifyListeners();
     return success;
@@ -131,14 +197,6 @@ class PosProvider with ChangeNotifier {
     }
     _isLoading = false;
     notifyListeners();
-  }
-
-  Future<void> fetchSettings() async {
-    final settings = await _apiService.fetchPosSettings();
-    if (settings.containsKey('tax_rate')) {
-      _taxRatePercent = (settings['tax_rate'] ?? 10.0).toDouble();
-      notifyListeners();
-    }
   }
 
   Future<bool> createProduct(Map<String, dynamic> data) async {
@@ -263,6 +321,13 @@ class PosProvider with ChangeNotifier {
 
   void addToCart(Product product) {
     final index = _cart.indexWhere((item) => item.product.id == product.id);
+    int currentQty = index >= 0 ? _cart[index].quantity : 0;
+    
+    // Do not exceed physical stock
+    if (currentQty >= product.stockCount) {
+      return;
+    }
+
     if (index >= 0) {
       _cart[index].quantity++;
     } else {
@@ -280,6 +345,25 @@ class PosProvider with ChangeNotifier {
         _cart[index].quantity = quantity;
       }
       notifyListeners();
+    }
+  }
+
+  Map<String, int> getProductStockInfo(String productId) {
+    try {
+      final product = _products.firstWhere((p) => p.id == productId);
+      final cartItemIndex = _cart.indexWhere((item) => item.product.id == productId);
+      int cartQty = 0;
+      if (cartItemIndex >= 0) {
+        cartQty = _cart[cartItemIndex].quantity;
+      }
+      int balance = product.stockCount - cartQty;
+      return {
+        'stock': balance < 0 ? 0 : balance,
+        'total': product.stockCount,
+        'cart': cartQty,
+      };
+    } catch (e) {
+      return {'stock': 0, 'total': 0, 'cart': 0};
     }
   }
 

@@ -7,6 +7,7 @@ class Product {
   final String imageUrl;
   final String category;
   final int stockCount;
+  final String? supplierId;
 
   Product({
     required this.id,
@@ -17,6 +18,7 @@ class Product {
     required this.imageUrl,
     required this.category,
     this.stockCount = 0,
+    this.supplierId,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -28,7 +30,8 @@ class Product {
       price: double.tryParse(json['price']?.toString() ?? '0') ?? 0.0,
       imageUrl: json['image_url']?.toString() ?? json['imageUrl']?.toString() ?? '',
       category: json['category']?.toString() ?? 'Uncategorized',
-      stockCount: int.tryParse(json['stock_count']?.toString() ?? json['stockCount']?.toString() ?? '0') ?? 0,
+      stockCount: int.tryParse(json['stock_quantity']?.toString() ?? json['stock_count']?.toString() ?? json['stockCount']?.toString() ?? '0') ?? 0,
+      supplierId: json['supplier_id']?.toString(),
     );
   }
 }

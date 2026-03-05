@@ -171,9 +171,17 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final descCtrl = TextEditingController(text: product?.description ?? '');
     final stockCtrl = TextEditingController(text: product != null ? product.stockCount.toString() : '');
     final newCategoryCtrl = TextEditingController();
+    final newSupplierCtrl = TextEditingController();
 
     final selectableCategories = provider.categories.where((c) => c != 'All').toList();
     if (selectableCategories.isEmpty) selectableCategories.add('Uncategorized');
+
+    final selectableSuppliers = provider.suppliers;
+    String? selectedSupplierId = product?.supplierId;
+    if (selectedSupplierId != null && !selectableSuppliers.any((s) => s.id == selectedSupplierId)) {
+      selectedSupplierId = null;
+    }
+    bool isNewSupplier = false;
 
     String selectedCategory = product?.category ?? selectableCategories.first;
     if (!selectableCategories.contains(selectedCategory) && selectedCategory != 'Uncategorized') {
@@ -274,6 +282,36 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 ],
 
                 const SizedBox(height: 12),
+
+                // --- Supplier Dropdown ---
+                DropdownButtonFormField<String?>(
+                  value: selectableSuppliers.any((s) => s.id == selectedSupplierId) ? selectedSupplierId : (isNewSupplier ? 'NEW_SUPPLIER' : null),
+                  dropdownColor: const Color(0xFF1E1E2C),
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Select Supplier',
+                    filled: true,
+                    fillColor: const Color(0xFF1E1E2C),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  items: [
+                    const DropdownMenuItem(value: null, child: Text('None')),
+                    ...selectableSuppliers.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))),
+                    const DropdownMenuItem(value: 'NEW_SUPPLIER', child: Text('Add New Supplier...', style: TextStyle(color: Color(0xFFFF6B6B)))),
+                  ],
+                  onChanged: (val) {
+                    setDlgState(() {
+                      selectedSupplierId = val;
+                      isNewSupplier = val == 'NEW_SUPPLIER';
+                    });
+                  },
+                ),
+                if (isNewSupplier) ...[
+                  const SizedBox(height: 8),
+                  _dialogField('Enter New Supplier Name', newSupplierCtrl),
+                ],
+
+                const SizedBox(height: 12),
                 _dialogField('Price (LKR)', priceCtrl, isNumber: true),
                 const SizedBox(height: 12),
                 _dialogField('Initial Stock', stockCtrl, isNumber: true),
@@ -300,6 +338,31 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
                 final sku = isEditing ? null : 'SKU-\${DateTime.now().millisecondsSinceEpoch}';
 
+                String? finalSupplierId = selectedSupplierId;
+                if (isNewSupplier && newSupplierCtrl.text.trim().isNotEmpty) {
+                  final newName = newSupplierCtrl.text.trim();
+                  final success = await provider.createSupplier({'name': newName});
+                  if (success) {
+                    // Refresh suppliers to get the newly created one's ID
+                    final suppliers = await provider.fetchSuppliers();
+                    try {
+                      final newSupplier = suppliers.firstWhere((s) => s.name == newName);
+                      finalSupplierId = newSupplier.id;
+                    } catch (e) {
+                      finalSupplierId = null;
+                    }
+                  } else {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Failed to create new supplier'), backgroundColor: Colors.red)
+                      );
+                    }
+                    return;
+                  }
+                } else if (isNewSupplier) {
+                  finalSupplierId = null;
+                }
+
                 final data = {
                   'name': valName,
                   'description': descCtrl.text.trim(),
@@ -308,6 +371,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   'stock_quantity': valStock,
                   'image_url': imageUrl,
                 };
+                if (finalSupplierId != null && finalSupplierId != 'NEW_SUPPLIER') {
+                  data['supplier_id'] = int.tryParse(finalSupplierId) ?? finalSupplierId;
+                }
                 
                 if (!isEditing) {
                   data['sku'] = sku!;

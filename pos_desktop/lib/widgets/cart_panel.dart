@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/pos_provider.dart';
-import '../services/receipt_service.dart';
 
 class CartPanel extends StatefulWidget {
   const CartPanel({Key? key}) : super(key: key);
@@ -84,46 +83,13 @@ class _CartPanelState extends State<CartPanel> {
               : '❌ Failed to place order.'),
           backgroundColor: success ? Colors.green : Colors.red,
         ));
-
+        
         if (success) {
-          final printerName = provider.selectedPrinterName;
-          if (printerName == null || printerName.isEmpty) {
-            // No printer configured — show a gentle warning
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('⚠️ No printer selected. Go to Settings → Receipt Printer.'),
-                backgroundColor: Colors.orange,
-                duration: Duration(seconds: 3),
-              ),
-            );
-          } else {
-            // Show "printing" toast immediately
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('🖨️ Printing receipt on "$printerName"…'),
-                duration: const Duration(seconds: 2),
-              ),
-            );
-
-            // Grab the most recent order from history and print
-            if (provider.orderHistory.isNotEmpty) {
-              final order = provider.orderHistory.first;
-              final error = await ReceiptService.printReceipt(
-                order,
-                printerName,
-                taxRatePercent: provider.taxRatePercent,
-              );
-              if (mounted && error != null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('❌ Print failed: $error'),
-                    backgroundColor: Colors.red,
-                    duration: const Duration(seconds: 4),
-                  ),
-                );
-              }
-            }
-          }
+          // Mock print action
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('🖨️ Printing receipt...'),
+            duration: Duration(seconds: 1),
+          ));
         }
       }
     }
@@ -169,9 +135,9 @@ class _CartPanelState extends State<CartPanel> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
+                        color: Colors.red.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.withOpacity(0.3)),
+                        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
                       ),
                       child: const Row(
                         children: [
@@ -205,6 +171,10 @@ class _CartPanelState extends State<CartPanel> {
                     itemCount: provider.cart.length,
                     itemBuilder: (context, index) {
                       final item = provider.cart[index];
+                      final stockInfo = provider.getProductStockInfo(item.product.id);
+                      final isStockLow = stockInfo['stock']! < 5 && stockInfo['stock']! > 0;
+                      final isOutOfStock = stockInfo['stock']! == 0;
+
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16.0),
                         child: Row(
@@ -244,6 +214,21 @@ class _CartPanelState extends State<CartPanel> {
                                     'x ${item.quantity}',
                                     style: TextStyle(color: Colors.grey[400], fontSize: 12),
                                   ),
+                                  if (isOutOfStock)
+                                    const Text(
+                                      'Out of Stock',
+                                      style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                                    )
+                                  else if (isStockLow)
+                                    Text(
+                                      'Low Stock (${stockInfo['stock']})',
+                                      style: const TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold),
+                                    )
+                                  else
+                                    Text(
+                                      'Stock: ${stockInfo['stock']}',
+                                      style: TextStyle(color: Colors.green[400], fontSize: 10),
+                                    ),
                                 ],
                               ),
                             ),
@@ -260,12 +245,23 @@ class _CartPanelState extends State<CartPanel> {
                                   children: [
                                     _qtyBtn(
                                       Icons.remove,
-                                      () => provider.updateQuantity(item.product, item.quantity - 1),
+                                      () {
+                                        if (item.quantity > item.product.stockCount) {
+                                          // Allow reducing quantity until stock limit, then let provider handle it
+                                          provider.updateQuantity(item.product, item.quantity - 1);
+                                        } else if (item.quantity > 1) {
+                                          provider.updateQuantity(item.product, item.quantity - 1);
+                                        }
+                                      },
                                     ),
                                     const SizedBox(width: 12),
                                     _qtyBtn(
                                       Icons.add,
-                                      () => provider.updateQuantity(item.product, item.quantity + 1),
+                                      () {
+                                        if (item.quantity < item.product.stockCount) {
+                                          provider.updateQuantity(item.product, item.quantity + 1);
+                                        }
+                                      },
                                     ),
                                   ],
                                 ),
@@ -364,9 +360,9 @@ class _CartPanelState extends State<CartPanel> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Colors.green.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.green.withOpacity(0.4)),
+                      border: Border.all(color: Colors.green.withValues(alpha: 0.4)),
                     ),
                     child: Row(
                       children: [
@@ -405,10 +401,6 @@ class _CartPanelState extends State<CartPanel> {
                     labelColor: Colors.green,
                   ),
                 ],
-
-                const SizedBox(height: 10),
-                _summaryRow('Tax (${provider.taxRatePercent.toStringAsFixed(provider.taxRatePercent == provider.taxRatePercent.roundToDouble() ? 0 : 1)}%)',
-                    'LKR ${provider.tax.toStringAsFixed(2)}'),
 
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 14),

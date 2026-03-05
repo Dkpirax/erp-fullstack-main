@@ -107,6 +107,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           
                           const SizedBox(height: 24),
 
+                          const SizedBox(height: 24),
+
                           // Printer Setting
                           Container(
                             padding: const EdgeInsets.all(20),
@@ -174,6 +176,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                     style: const TextStyle(color: Color(0xFFFF6B6B), fontSize: 12, fontWeight: FontWeight.bold),
                                   ),
                                 ]
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 24),
+
+                          // Barcode Scanner Setting
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2A2A3C),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Barcode Scanner (Serial)',
+                                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          'Select the COM port for the barcode scanner',
+                                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                                        ),
+                                      ],
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.refresh, color: Colors.white70),
+                                      onPressed: () => setState(() {}), // Trigger rebuild to refresh port list
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF1E1E2C),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value: provider.selectedScannerPort,
+                                      isExpanded: true,
+                                      hint: const Text('None / Select Port', style: TextStyle(color: Colors.grey)),
+                                      dropdownColor: const Color(0xFF2A2A3C),
+                                      items: [
+                                        const DropdownMenuItem<String>(
+                                          value: 'None',
+                                          child: Text('None', style: TextStyle(color: Colors.white)),
+                                        ),
+                                        ...provider.getAvailableSerialPorts().map((String port) {
+                                          return DropdownMenuItem<String>(
+                                            value: port,
+                                            child: Text(port, style: const TextStyle(color: Colors.white)),
+                                          );
+                                        }),
+                                      ],
+                                      onChanged: (String? newValue) {
+                                        provider.setSelectedScannerPort(newValue);
+                                      },
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),

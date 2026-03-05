@@ -47,9 +47,7 @@ class ReceiptService {
 
 
   /// Generates a plain-text receipt from an [OrderModel].
-  /// [taxRatePercent] is displayed in the Tax label (e.g. 10 → "Tax (10%)").
-  static String generateReceiptText(OrderModel order,
-      {double taxRatePercent = 10.0}) {
+  static String generateReceiptText(OrderModel order) {
     final now = order.date;
     final dateStr =
         '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}  '
@@ -88,11 +86,6 @@ class ReceiptService {
     if (order.discount > 0) {
       buf.writeln(_alignRight('Discount:', '-LKR ${order.discount.toStringAsFixed(2)}'));
     }
-    // Show rate with no trailing zero for whole numbers (10 → "10%", 8.5 → "8.5%")
-    final rateLabel = taxRatePercent == taxRatePercent.roundToDouble()
-        ? taxRatePercent.toStringAsFixed(0)
-        : taxRatePercent.toStringAsFixed(1);
-    buf.writeln(_alignRight('Tax ($rateLabel%):', 'LKR ${order.tax.toStringAsFixed(2)}'));
     buf.writeln(dash);
     buf.writeln(_alignRight('TOTAL:', 'LKR ${order.total.toStringAsFixed(2)}'));
     buf.writeln(dash);
@@ -112,17 +105,13 @@ class ReceiptService {
 
   /// Prints [order] to the Windows/network printer named [printerName].
   ///
-  /// [taxRatePercent] is forwarded to [generateReceiptText] so the receipt
-  /// label matches the configured rate.
-  ///
   /// Uses PowerShell `Out-Printer` which works for any printer installed in
   /// Windows (local USB, Bluetooth, or network shared printers).
   ///
   /// Returns `null` on success, or an error string on failure.
   static Future<String?> printReceipt(
-      OrderModel order, String printerName,
-      {double taxRatePercent = 10.0}) async {
-    final receiptText = generateReceiptText(order, taxRatePercent: taxRatePercent);
+      OrderModel order, String printerName) async {
+    final receiptText = generateReceiptText(order);
 
     // Write to a temp file
     final tmpDir  = Directory.systemTemp;
