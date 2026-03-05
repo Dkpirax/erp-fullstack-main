@@ -62,7 +62,7 @@ class PosProvider with ChangeNotifier {
 
   List<String> getAvailableSerialPorts() {
     try {
-      return SerialPort.getPorts();
+      return SerialPort.getAvailablePorts();
     } catch (e) {
       return [];
     }
@@ -81,7 +81,7 @@ class PosProvider with ChangeNotifier {
     if (_selectedScannerPort == null || _selectedScannerPort == 'None') return;
 
     try {
-      final port = SerialPort(_selectedScannerPort!, baudrate: BaudRate.B9600);
+      final port = SerialPort(_selectedScannerPort!, BaudRate: 9600);
       port.open();
       if (port.isOpened) {
         _activeSerialPort = port;
@@ -98,7 +98,7 @@ class PosProvider with ChangeNotifier {
     String buffer = '';
     while (_activeSerialPort != null && _activeSerialPort!.isOpened) {
       try {
-        final data = _activeSerialPort!.readBytes(1); // Read byte by byte for simplicity or use events
+        final data = await _activeSerialPort!.readBytes(1, timeout: const Duration(milliseconds: 10)); // Read byte by byte for simplicity or use events
         if (data.isNotEmpty) {
            final char = String.fromCharCodes(data);
            if (char == '\n' || char == '\r') {
