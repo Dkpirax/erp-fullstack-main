@@ -1,0 +1,31 @@
+name: pos_desktop
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  intl: ^0.18.1
+  cupertino_icons: ^1.0.8
+  http: ^1.6.0
+  provider: ^6.1.5+1
+  google_fonts: ^8.0.2
+  virtual_keyboard_multi_language: ^1.1.2
+  file_picker: ^10.3.10
+  barcode_widget: ^2.0.4
+  pdf: ^3.11.3
+  printing: ^5.14.2
+  serial_port_win32: ^2.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

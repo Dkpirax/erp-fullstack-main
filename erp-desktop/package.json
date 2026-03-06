@@ -1,0 +1,52 @@
+{
+  "name": "erp-desktop",
+  "version": "1.0.0",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "concurrently \"nodemon server.js\" \"electron .\"",
+    "prebuild": "node copy.js",
+    "build": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.erp.desktop",
+    "productName": "ERP Desktop",
+    "directories": {
+      "output": "dist_app"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "files": [
+      "dist-frontend/**/*",
+      "main.js",
+      "server.js",
+      "config/**/*",
+      "node_modules/**/*",
+      "routes/**/*",
+      "models/**/*",
+      "sockets/**/*",
+      "middleware/**/*",
+      "whatsapp/**/*"
+    ]
+  },
+  "keywords": [],
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.0.2",
+    "sequelize": "^6.37.7",
+    "socket.io": "^4.8.3",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "electron": "^40.6.0",
+    "electron-builder": "^26.8.1",
+    "nodemon": "^3.1.14"
+  }
+}
