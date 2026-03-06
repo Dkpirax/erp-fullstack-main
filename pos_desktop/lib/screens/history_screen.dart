@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/pos_provider.dart';
 import '../widgets/sidebar.dart';
 import 'package:intl/intl.dart';
+import '../services/receipt_service.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({Key? key}) : super(key: key);
@@ -159,10 +160,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                               SizedBox(
                                                 width: double.infinity,
                                                 child: OutlinedButton.icon(
-                                                  onPressed: () {
+                                                  onPressed: () async {
                                                     ScaffoldMessenger.of(context).showSnackBar(
                                                       const SnackBar(content: Text('🖨️ Reprinting receipt...'))
                                                     );
+                                                    
+                                                    final printer = provider.selectedPrinterName;
+                                                    if (printer != null && printer.isNotEmpty) {
+                                                      final printError = await ReceiptService.printReceipt(order, printer);
+                                                      if (printError != null && mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                                          content: Text('⚠️ Print failed: $printError'),
+                                                          backgroundColor: Colors.orange,
+                                                        ));
+                                                      } else if (mounted) {
+                                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                                                          content: Text('✅ Receipt reprinted successfully!'),
+                                                          backgroundColor: Colors.green,
+                                                        ));
+                                                      }
+                                                    } else {
+                                                      await ReceiptService.showPrintPreview(context, order);
+                                                    }
                                                   },
                                                   icon: const Icon(Icons.print, size: 18),
                                                   label: const Text('Reprint Receipt'),

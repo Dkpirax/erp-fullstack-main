@@ -1,0 +1,13 @@
+[
+  {
+    "id": 2,
+    "username": "admin",
+    "email": "admin@example.com",
+    "hashed_password": "$2a$10$lXkAw2BzlGV8x8HBfcN2Ueh1YTEfgfeR1hP3rPFxYBgyp4J17VGwC",
+    "full_name": "System Administrator",
+    "is_active": true,
+    "is_superuser": true,
+    "role": "admin",
+    "branch_id": null
+  }
+]

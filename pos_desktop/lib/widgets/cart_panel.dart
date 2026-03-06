@@ -29,7 +29,7 @@ class _CartPanelState extends State<CartPanel> {
       if (!mounted) return;
       final provider = Provider.of<PosProvider>(context, listen: false);
       provider.onCheckoutTrigger = () {
-        if (mounted) _showPaymentDialog(context, provider);
+        if (mounted) _handleCheckout(context, provider);
       };
       provider.onApplyTrigger = () {
         if (mounted && _promoController.text.isNotEmpty) {
@@ -78,64 +78,55 @@ class _CartPanelState extends State<CartPanel> {
     }
   }
 
-  Future<void> _showPaymentDialog(BuildContext context, PosProvider provider) async {
-    String? selectedMethod = await showDialog<String>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF2A2A3C),
-          title: const Text('Select Payment Method', style: TextStyle(color: Colors.white)),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.money, color: Colors.green),
-                title: const Text('Cash', style: TextStyle(color: Colors.white)),
-                onTap: () => Navigator.pop(context, 'CASH'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.credit_card, color: Colors.blue),
-                title: const Text('Card', style: TextStyle(color: Colors.white)),
-                onTap: () => Navigator.pop(context, 'CARD'),
-              ),
-            ],
-          ),
-        );
-      },
+  Future<void> _handleCheckout(BuildContext context, PosProvider provider) async {
+    const String selectedMethod = 'CASH';
+
+    // Create a temporary OrderModel for the preview
+    final tempOrder = OrderModel(
+      id: 'TBD', 
+      items: List.from(provider.cart),
+      subtotal: provider.subtotal,
+      discount: provider.discount,
+      tax: 0,
+      total: provider.total,
+      paymentMethod: selectedMethod,
+      date: DateTime.now(),
     );
 
-    if (selectedMethod != null) {
-      // Create a temporary OrderModel for the preview
-      final tempOrder = OrderModel(
-        id: 'TBD', 
-        items: List.from(provider.cart),
-        subtotal: provider.subtotal,
-        discount: provider.discount,
-        tax: 0,
-        total: provider.total,
-        paymentMethod: selectedMethod,
-        date: DateTime.now(),
-      );
+    final success = await provider.checkout(selectedMethod);
+    if (mounted) {
+      setState(() => _promoError = null);
+      
+      if (success) {
+        // The order history was just refreshed. Assume the first is our new order.
+        final finalOrder = provider.orderHistory.isNotEmpty 
+            ? provider.orderHistory.first 
+            : tempOrder;
 
-      // Show the print preview before checkout
-      // This allows the user to see what will be printed.
-      await ReceiptService.showPrintPreview(context, tempOrder);
+        final printer = provider.selectedPrinterName;
+        if (printer != null && printer.isNotEmpty) {
+          final printError = await ReceiptService.printReceipt(finalOrder, printer);
+          if (printError != null && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('⚠️ Print failed: $printError'),
+              backgroundColor: Colors.orange,
+            ));
+          }
+        } else {
+          await ReceiptService.showPrintPreview(context, finalOrder);
+        }
 
-      final success = await provider.checkout(selectedMethod);
-      if (mounted) {
-        setState(() => _promoError = null);
-        
-        if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('✅ Order placed successfully ($selectedMethod)!'),
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('✅ Order placed successfully!'),
             backgroundColor: Colors.green,
           ));
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('❌ Failed to place order.'),
-            backgroundColor: Colors.red,
-          ));
         }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('❌ Failed to place order.'),
+          backgroundColor: Colors.red,
+        ));
       }
     }
   }
@@ -566,7 +557,7 @@ class _CartPanelState extends State<CartPanel> {
                   child: ElevatedButton(
                     onPressed: provider.cart.isEmpty || provider.isLoading
                         ? null
-                        : () => _showPaymentDialog(context, provider),
+                        : () => _handleCheckout(context, provider),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0882C8),
                       foregroundColor: Colors.white,

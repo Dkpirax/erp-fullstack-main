@@ -111,21 +111,9 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
 };
 
 export const getCurrentUser = async (): Promise<User> => {
-    try {
-        const response = await api.get<User>('/users/me');
-        if (!response.data) throw new Error("Empty response");
-        return response.data;
-    } catch (error) {
-        console.warn("Failed to get user, falling back to default admin.", error);
-        return {
-            id: 1,
-            username: "admin",
-            email: "admin@example.com",
-            full_name: "System Administrator",
-            is_active: true,
-            is_superuser: true
-        };
-    }
+    const response = await api.get<User>('/users/me');
+    if (!response.data) throw new Error("Empty response");
+    return response.data;
 };
 
 // User Management

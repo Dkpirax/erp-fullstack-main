@@ -10,8 +10,8 @@ if not exist node_modules (
     call npm install
 )
 
-echo Starting server on port 8001...
-echo API available at http://localhost:8001/api/v1
+echo Starting server on port 3000...
+echo API available at http://localhost:3000/api/v1
 echo.
 
 call npm run dev

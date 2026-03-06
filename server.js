@@ -64,7 +64,7 @@ const startServer = async () => {
 
         // Sync database models
         console.log('🔄 Syncing database models...');
-        await sequelize.sync({ alter: true }); // alter:true causes ER_TOO_MANY_KEYS over time
+        await sequelize.sync({ alter: false }); // alter:true causes ER_TOO_MANY_KEYS over time
         console.log('✅ Database models synced.');
 
         // Seed Admin User

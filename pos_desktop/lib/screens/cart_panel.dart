@@ -88,24 +88,38 @@ class _CartPanelState extends State<CartPanel> {
         date: DateTime.now(),
       );
 
-      // Show the print preview
-      await ReceiptService.showPrintPreview(context, tempOrder);
-
       final success = await provider.checkout(selectedMethod);
       if (mounted) {
         setState(() => _promoError = null);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(success
-              ? '✅ Order placed successfully ($selectedMethod)!'
-              : '❌ Failed to place order.'),
-          backgroundColor: success ? Colors.green : Colors.red,
-        ));
         
         if (success) {
-          // Success message
+          final finalOrder = provider.orderHistory.isNotEmpty 
+              ? provider.orderHistory.first 
+              : tempOrder;
+
+          final printer = provider.selectedPrinterName;
+          if (printer != null && printer.isNotEmpty) {
+            final printError = await ReceiptService.printReceipt(finalOrder, printer);
+            if (printError != null && mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('⚠️ Print failed: $printError'),
+                backgroundColor: Colors.orange,
+              ));
+            }
+          } else {
+            await ReceiptService.showPrintPreview(context, finalOrder);
+          }
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text('✅ Order placed successfully ($selectedMethod)!'),
+              backgroundColor: Colors.green,
+            ));
+          }
+        } else {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('🖨️ Receipt process completed.'),
-            duration: Duration(seconds: 1),
+            content: Text('❌ Failed to place order.'),
+            backgroundColor: Colors.red,
           ));
         }
       }
