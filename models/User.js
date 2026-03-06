@@ -51,11 +51,7 @@ const User = sequelize.define('User', {
     }
 }, {
     tableName: 'users',
-    timestamps: false,
-    indexes: [
-        { fields: ['username'] },
-        { fields: ['email'] }
-    ]
+    timestamps: false
 });
 
 // Instance method to verify password
