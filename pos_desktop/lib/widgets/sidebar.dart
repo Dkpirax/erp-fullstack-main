@@ -29,7 +29,7 @@ class Sidebar extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 40, maxWidth: 40),
+              constraints: const BoxConstraints(maxHeight: 30, maxWidth: 30),
               child: Image.asset(
                 'assets/image/logo.png',
                 fit: BoxFit.contain,

@@ -6,6 +6,7 @@ import 'package:printing/printing.dart';
 import '../providers/pos_provider.dart';
 import '../models/product.dart';
 import '../widgets/sidebar.dart';
+import '../widgets/app_keyboard.dart';
 
 class BarcodesScreen extends StatefulWidget {
   const BarcodesScreen({Key? key}) : super(key: key);
@@ -19,6 +20,7 @@ class _BarcodesScreenState extends State<BarcodesScreen> {
   final Map<String, int> _printQuantities = {};
   String _searchQuery = '';
   final TextEditingController _searchCtrl = TextEditingController();
+  TextEditingController? _activeController;
 
   @override
   void initState() {
@@ -203,6 +205,12 @@ class _BarcodesScreenState extends State<BarcodesScreen> {
                     ),
                     child: TextField(
                       controller: _searchCtrl,
+                      readOnly: provider.useOnScreenKeyboard,
+                      onTap: () {
+                        if (provider.useOnScreenKeyboard) {
+                          setState(() => _activeController = _searchCtrl);
+                        }
+                      },
                       onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
                       style: const TextStyle(color: Colors.white),
                       decoration: const InputDecoration(
@@ -267,6 +275,11 @@ class _BarcodesScreenState extends State<BarcodesScreen> {
               ),
             ),
           ),
+          if (provider.useOnScreenKeyboard && _activeController != null)
+            AppKeyboard(
+              controller: _activeController!,
+              onClosed: () => setState(() => _activeController = null),
+            ),
         ],
       ),
     );

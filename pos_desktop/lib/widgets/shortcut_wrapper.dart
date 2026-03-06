@@ -12,7 +12,8 @@ import '../screens/settings_screen.dart';
 
 class ShortcutWrapper extends StatelessWidget {
   final Widget child;
-  const ShortcutWrapper({Key? key, required this.child}) : super(key: key);
+  final GlobalKey<NavigatorState> navigatorKey;
+  const ShortcutWrapper({Key? key, required this.child, required this.navigatorKey}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +31,9 @@ class ShortcutWrapper extends StatelessWidget {
           final requiresCtrl = parts.contains('CTRL');
           final mainKeyStr = parts.last;
 
-          if (requiresCtrl != event.isControlPressed) return false;
+          // Only block if shortcut REQUIRES ctrl but ctrl isn't pressed.
+          // Allow ctrl to be held even if shortcut doesn't specify it.
+          if (requiresCtrl && !event.isControlPressed) return false;
 
           final mainKeys = _parseKeys(mainKeyStr);
           if (mainKeys.contains(event.logicalKey)) return true;
@@ -41,25 +44,34 @@ class ShortcutWrapper extends StatelessWidget {
           final char = event.character?.toUpperCase();
           if (char != null && char.isNotEmpty && char == mainKeyStr) return true;
 
+          // Fallback for Digit keys which sometimes lose keyLabel in certain web/desktop environments
+          if (mainKeyStr.length == 1 && RegExp(r'[0-9]').hasMatch(mainKeyStr)) {
+            final digit = int.parse(mainKeyStr);
+            if (event.logicalKey.keyId == LogicalKeyboardKey.digit0.keyId + digit ||
+                event.logicalKey.keyId == LogicalKeyboardKey.numpad0.keyId + digit) {
+              return true;
+            }
+          }
+
           return false;
         }
 
         final shortcuts = provider.customShortcuts;
 
         if (isMatch(shortcuts['Menu'])) {
-          _navigate(context, const MainPosScreen());
+          _navigate(const MainPosScreen());
         } else if (isMatch(shortcuts['History'])) {
-          _navigate(context, const HistoryScreen());
+          _navigate(const HistoryScreen());
         } else if (isMatch(shortcuts['Promos'])) {
-          _navigate(context, const PromosScreen());
+          _navigate(const PromosScreen());
         } else if (isMatch(shortcuts['Suppliers'])) {
-          _navigate(context, const SuppliersScreen());
+          _navigate(const SuppliersScreen());
         } else if (isMatch(shortcuts['Products']) && provider.isAdmin) {
-          _navigate(context, const ProductsScreen());
+          _navigate(const ProductsScreen());
         } else if (isMatch(shortcuts['Barcodes']) && provider.isAdmin) {
-          _navigate(context, const BarcodesScreen());
+          _navigate(const BarcodesScreen());
         } else if (isMatch(shortcuts['Settings'])) {
-          _navigate(context, const SettingsScreen());
+          _navigate(const SettingsScreen());
         } else if (isMatch(shortcuts['Checkout'])) {
           provider.triggerCheckout();
         } else if (isMatch(shortcuts['Clear Cart'])) {
@@ -104,7 +116,35 @@ class ShortcutWrapper extends StatelessWidget {
         case '`': return {LogicalKeyboardKey.backquote};
       }
       if (code >= 65 && code <= 90) { // A-Z
-        return {LogicalKeyboardKey(code + 32)}; // Lowercase match
+        final char = String.fromCharCode(code).toLowerCase();
+        switch (char) {
+          case 'a': return {LogicalKeyboardKey.keyA};
+          case 'b': return {LogicalKeyboardKey.keyB};
+          case 'c': return {LogicalKeyboardKey.keyC};
+          case 'd': return {LogicalKeyboardKey.keyD};
+          case 'e': return {LogicalKeyboardKey.keyE};
+          case 'f': return {LogicalKeyboardKey.keyF};
+          case 'g': return {LogicalKeyboardKey.keyG};
+          case 'h': return {LogicalKeyboardKey.keyH};
+          case 'i': return {LogicalKeyboardKey.keyI};
+          case 'j': return {LogicalKeyboardKey.keyJ};
+          case 'k': return {LogicalKeyboardKey.keyK};
+          case 'l': return {LogicalKeyboardKey.keyL};
+          case 'm': return {LogicalKeyboardKey.keyM};
+          case 'n': return {LogicalKeyboardKey.keyN};
+          case 'o': return {LogicalKeyboardKey.keyO};
+          case 'p': return {LogicalKeyboardKey.keyP};
+          case 'q': return {LogicalKeyboardKey.keyQ};
+          case 'r': return {LogicalKeyboardKey.keyR};
+          case 's': return {LogicalKeyboardKey.keyS};
+          case 't': return {LogicalKeyboardKey.keyT};
+          case 'u': return {LogicalKeyboardKey.keyU};
+          case 'v': return {LogicalKeyboardKey.keyV};
+          case 'w': return {LogicalKeyboardKey.keyW};
+          case 'x': return {LogicalKeyboardKey.keyX};
+          case 'y': return {LogicalKeyboardKey.keyY};
+          case 'z': return {LogicalKeyboardKey.keyZ};
+        }
       }
     }
     if (name.startsWith('F') && name.length <= 3) {
@@ -120,8 +160,8 @@ class ShortcutWrapper extends StatelessWidget {
     return {};
   }
 
-  void _navigate(BuildContext context, Widget screen) {
-    Navigator.of(context).pushReplacement(
+  void _navigate(Widget screen) {
+    navigatorKey.currentState?.pushReplacement(
       PageRouteBuilder(
         pageBuilder: (context, animation1, animation2) => screen,
         transitionDuration: Duration.zero,

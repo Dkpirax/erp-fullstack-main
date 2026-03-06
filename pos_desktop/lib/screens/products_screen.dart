@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/pos_provider.dart';
 import '../models/product.dart';
 import '../widgets/sidebar.dart';
-import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
+import '../widgets/app_keyboard.dart';
 import 'package:file_picker/file_picker.dart';
 
 class ProductsScreen extends StatefulWidget {
@@ -42,31 +42,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
     super.dispose();
   }
 
-  void _onKeyPress(VirtualKeyboardKey key) {
-    if (_activeController == null) return;
-    
-    if (key.keyType == VirtualKeyboardKeyType.String) {
-      _activeController!.text += key.text!;
-    } else if (key.keyType == VirtualKeyboardKeyType.Action) {
-      switch (key.action) {
-        case VirtualKeyboardKeyAction.Backspace:
-          if (_activeController!.text.isNotEmpty) {
-            _activeController!.text = _activeController!.text
-                .substring(0, _activeController!.text.length - 1);
-          }
-          break;
-        case VirtualKeyboardKeyAction.Return:
-          _activeController!.text += '\n';
-          break;
-        case VirtualKeyboardKeyAction.Space:
-          _activeController!.text += ' ';
-          break;
-        default:
-      }
-    }
-    _activeController!.selection = TextSelection.fromPosition(
-        TextPosition(offset: _activeController!.text.length));
-  }
 
   void _confirmDeleteProduct(BuildContext context, PosProvider provider, Product p) {
     showDialog(
@@ -247,29 +222,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ),
           ),
           if (provider.useOnScreenKeyboard && _activeController != null)
-            Container(
-              color: const Color(0xFF1A1A28),
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => setState(() => _activeController = null),
-                      ),
-                    ],
-                  ),
-                  VirtualKeyboard(
-                    height: 250,
-                    textColor: Colors.white,
-                    fontSize: 20,
-                    type: VirtualKeyboardType.Alphanumeric,
-                    postKeyPress: (key) => _onKeyPress(key),
-                  ),
-                ],
-              ),
+            AppKeyboard(
+              controller: _activeController!,
+              onClosed: () => setState(() => _activeController = null),
             ),
         ],
       ),

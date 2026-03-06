@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/pos_provider.dart';
 import '../widgets/sidebar.dart';
-import 'package:virtual_keyboard_multi_language/virtual_keyboard_multi_language.dart';
+import '../widgets/app_keyboard.dart';
 import '../services/receipt_service.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -47,31 +47,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.dispose();
   }
 
-  void _onKeyPress(VirtualKeyboardKey key) {
-    if (_activeController == null) return;
-    
-    if (key.keyType == VirtualKeyboardKeyType.String) {
-      _activeController!.text += key.text!;
-    } else if (key.keyType == VirtualKeyboardKeyType.Action) {
-      switch (key.action) {
-        case VirtualKeyboardKeyAction.Backspace:
-          if (_activeController!.text.isNotEmpty) {
-            _activeController!.text = _activeController!.text
-                .substring(0, _activeController!.text.length - 1);
-          }
-          break;
-        case VirtualKeyboardKeyAction.Return:
-          _activeController!.text += '\n';
-          break;
-        case VirtualKeyboardKeyAction.Space:
-          _activeController!.text += ' ';
-          break;
-        default:
-      }
-    }
-    _activeController!.selection = TextSelection.fromPosition(
-        TextPosition(offset: _activeController!.text.length));
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +107,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Edit Shortcuts', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+                                  const Text('Shortcuts', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                                   const SizedBox(height: 16),
                                   ...provider.customShortcuts.entries.map((entry) {
                                     return Padding(
@@ -147,12 +122,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                             child: TextField(
                                               textAlign: TextAlign.center,
                                               style: const TextStyle(color: Color(0xFF0882C8), fontWeight: FontWeight.bold),
-                                              decoration: InputDecoration(
-                                                filled: true,
-                                                fillColor: const Color(0xFF1E1E2C),
-                                                contentPadding: EdgeInsets.zero,
-                                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                                              ),
+                                                decoration: InputDecoration(
+                                                  filled: true,
+                                                  fillColor: const Color(0xFF1E1E2C),
+                                                  contentPadding: EdgeInsets.zero,
+                                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                                  hintText: 'e.g. F1 or CTRL+1',
+                                                ),
                                               controller: TextEditingController(text: entry.value),
                                               onSubmitted: (newVal) => provider.updateShortcut(entry.key, newVal),
                                             ),
@@ -397,29 +373,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
           if (provider.useOnScreenKeyboard && _activeController != null)
-            Container(
-              color: const Color(0xFF1A1A28),
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => setState(() => _activeController = null),
-                      ),
-                    ],
-                  ),
-                  VirtualKeyboard(
-                    height: 250,
-                    textColor: Colors.white,
-                    fontSize: 20,
-                    type: VirtualKeyboardType.Alphanumeric,
-                    postKeyPress: (key) => _onKeyPress(key),
-                  ),
-                ],
-              ),
+            AppKeyboard(
+              controller: _activeController!,
+              onClosed: () => setState(() => _activeController = null),
             ),
         ],
       ),

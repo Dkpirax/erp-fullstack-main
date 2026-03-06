@@ -25,12 +25,15 @@ void main() async {
   );
 }
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 class POSApp extends StatelessWidget {
   const POSApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'POS Desktop',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -52,7 +55,7 @@ class POSApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: const LoginScreen(),
-      builder: (context, child) => ShortcutWrapper(child: child!),
+      builder: (context, child) => ShortcutWrapper(navigatorKey: navigatorKey, child: child!),
     );
   }
 }

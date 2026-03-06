@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-class VirtualKeyboard extends StatelessWidget {
+class AppKeyboard extends StatelessWidget {
   final TextEditingController controller;
   final VoidCallback onClosed;
 
-  const VirtualKeyboard({
+  const AppKeyboard({
     Key? key,
     required this.controller,
     required this.onClosed,
