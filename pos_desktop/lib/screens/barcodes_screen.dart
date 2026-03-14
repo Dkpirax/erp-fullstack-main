@@ -7,6 +7,8 @@ import '../providers/pos_provider.dart';
 import '../models/product.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/app_keyboard.dart';
+import '../services/receipt_service.dart';
+
 
 class BarcodesScreen extends StatefulWidget {
   const BarcodesScreen({Key? key}) : super(key: key);
@@ -122,9 +124,10 @@ class _BarcodesScreenState extends State<BarcodesScreen> {
                       pw.Row(
                         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                         children: [
-                          if (prod.size != null && prod.size!.isNotEmpty && prod.size != 'null')
+                          if ((prod.size != null && prod.size!.isNotEmpty && prod.size != 'null') ||
+                              (prod.sizeNumeric != null && prod.sizeNumeric!.isNotEmpty && prod.sizeNumeric != 'null'))
                             pw.Text(
-                              prod.size!,
+                              '${prod.size ?? ""} ${prod.sizeNumeric ?? ""}'.trim(),
                               style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
                             )
                           else
@@ -145,10 +148,31 @@ class _BarcodesScreenState extends State<BarcodesScreen> {
       ),
     );
 
-    await Printing.layoutPdf(
-      onLayout: (PdfPageFormat format) async => doc.save(),
-      name: 'Batch_Barcodes_${DateTime.now().toIso8601String()}.pdf',
-    );
+    // Standard A4 Layout or Roll? Usually barcode stickers are on rolls or specific sheets.
+    // The user wants direct printing, so we'll generate the PDF and send it.
+    final pdfBytes = await doc.save();
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('⌛ Sending to Barcode Printer...'), duration: Duration(seconds: 1)),
+      );
+    }
+
+    // Call ReceiptService for direct printing
+    final error = await ReceiptService.directPrintBarcodes(pdfBytes);
+
+    if (mounted) {
+      if (error == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('✅ Barcodes sent to printer successfully!'), backgroundColor: Colors.green),
+        );
+        setState(() => _printQuantities.clear());
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('⚠️ Print failed: $error'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   @override
@@ -242,7 +266,7 @@ class _BarcodesScreenState extends State<BarcodesScreen> {
                                     child: ListTile(
                                       title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
                                       subtitle: Text(
-                                        'SKU: ${p.sku.isEmpty ? 'N/A' : p.sku} | Size: ${p.size ?? "N/A"} | Category: ${p.category} | Stock: ${p.stockCount}',
+                                        'SKU: ${p.sku.isEmpty ? 'N/A' : p.sku} | Size: ${p.size ?? ""} ${p.sizeNumeric ?? ""} | Category: ${p.category} | Stock: ${p.stockCount}',
                                         style: const TextStyle(color: Colors.white70),
                                       ),
                                       trailing: Row(

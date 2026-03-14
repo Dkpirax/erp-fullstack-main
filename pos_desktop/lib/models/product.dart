@@ -9,6 +9,7 @@ class Product {
   final int stockCount;
   final String? supplierId;
   final String? size;
+  final String? sizeNumeric;
   final double costPrice;
 
   Product({
@@ -22,6 +23,7 @@ class Product {
     this.stockCount = 0,
     this.supplierId,
     this.size,
+    this.sizeNumeric,
     this.costPrice = 0.0,
   });
 
@@ -37,6 +39,7 @@ class Product {
       stockCount: int.tryParse(json['stock_quantity']?.toString() ?? json['stock_count']?.toString() ?? json['stockCount']?.toString() ?? '0') ?? 0,
       supplierId: json['supplier_id']?.toString(),
       size: (json['size'] == null || json['size'] == 'null') ? null : json['size'].toString(),
+      sizeNumeric: (json['size_numeric'] == null || json['size_numeric'] == 'null') ? null : json['size_numeric'].toString(),
       costPrice: double.tryParse(json['cost_price']?.toString() ?? '0') ?? 0.0,
     );
   }

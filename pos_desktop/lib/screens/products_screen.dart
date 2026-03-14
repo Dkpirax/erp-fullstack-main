@@ -202,7 +202,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                                           },
                                         ),
                                         title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                                        subtitle: Text('${p.category} | Size: ${p.size ?? "N/A"} | LKR ${p.price.toStringAsFixed(2)} | Stock: ${p.stockCount}'),
+                                        subtitle: Text('${p.category} | Size: ${p.size ?? ""} ${p.sizeNumeric ?? ""} | LKR ${p.price.toStringAsFixed(2)} | Stock: ${p.stockCount}'),
                                         trailing: provider.isAdmin 
                                           ? Row(
                                               mainAxisSize: MainAxisSize.min,
@@ -250,6 +250,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
     final descCtrl = TextEditingController(text: product?.description ?? '');
     final stockCtrl = TextEditingController(text: product != null ? product.stockCount.toString() : '');
     String? selectedSize = product?.size;
+    final sizeNumericCtrl = TextEditingController(text: product?.sizeNumeric ?? '');
     final newCategoryCtrl = TextEditingController();
     final newSupplierCtrl = TextEditingController();
 
@@ -420,6 +421,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   },
                 ),
                 const SizedBox(height: 12),
+                _dialogField('Numeric Size (e.g. 32, 40)', sizeNumericCtrl, isNumber: true),
+                const SizedBox(height: 12),
 
                 _dialogField('Initial Stock', stockCtrl, isNumber: true),
                 const SizedBox(height: 12),
@@ -476,6 +479,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   'price': valPrice,
                   'cost_price': double.tryParse(buyingPriceCtrl.text.trim()) ?? 0,
                   'size': selectedSize,
+                  'size_numeric': sizeNumericCtrl.text.trim(),
                   'category': finalCategory.isEmpty ? 'Uncategorized' : finalCategory,
                   'stock_quantity': valStock,
                   'image_url': imageUrl,

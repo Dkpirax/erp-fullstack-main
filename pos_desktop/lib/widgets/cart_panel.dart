@@ -103,16 +103,11 @@ class _CartPanelState extends State<CartPanel> {
             ? provider.orderHistory.first 
             : tempOrder;
 
-        final printer = provider.selectedPrinterName;
-        if (printer != null && printer.isNotEmpty) {
-          final printError = await ReceiptService.printReceipt(finalOrder, printer);
-          if (printError != null && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text('⚠️ Print failed: $printError'),
-              backgroundColor: Colors.orange,
-            ));
-          }
-        } else {
+        // Always attempt direct print first. ReceiptService handles auto-detect if printer is null.
+        final printError = await ReceiptService.printReceipt(finalOrder, provider.selectedPrinterName);
+        
+        if (printError != null && mounted) {
+          // If direct print fails (e.g. no printer found), fallback to preview
           await ReceiptService.showPrintPreview(context, finalOrder);
         }
 
@@ -215,108 +210,131 @@ class _CartPanelState extends State<CartPanel> {
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16.0),
-                        child: Row(
-                          children: [
-                            // Thumbnail
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[800],
-                                borderRadius: BorderRadius.circular(12),
-                                image: item.product.imageUrl.isNotEmpty
-                                    ? DecorationImage(
-                                        image: NetworkImage(item.product.imageUrl),
-                                        fit: BoxFit.cover,
-                                      )
-                                    : null,
-                              ),
-                              child: item.product.imageUrl.isEmpty
-                                  ? const Icon(Icons.shopping_bag, color: Colors.grey)
-                                  : null,
-                            ),
-                            const SizedBox(width: 12),
-                            // Name & qty
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: item.hasDiscount
+                                ? const Color(0xFF1B3A2A)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(10),
+                            border: item.hasDiscount
+                                ? Border.all(color: const Color(0xFF4CAF50).withOpacity(0.35))
+                                : null,
+                          ),
+                          padding: item.hasDiscount
+                              ? const EdgeInsets.symmetric(horizontal: 8, vertical: 6)
+                              : EdgeInsets.zero,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 children: [
-                                  Text(
-                                    item.product.name,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                  // Thumbnail
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[800],
+                                      borderRadius: BorderRadius.circular(12),
+                                      image: item.product.imageUrl.isNotEmpty
+                                          ? DecorationImage(
+                                              image: NetworkImage(item.product.imageUrl),
+                                              fit: BoxFit.cover,
+                                            )
+                                          : null,
+                                    ),
+                                    child: item.product.imageUrl.isEmpty
+                                        ? const Icon(Icons.shopping_bag, color: Colors.grey)
+                                        : null,
                                   ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Text(
-                                        'x ${item.quantity}',
-                                        style: TextStyle(color: Colors.grey[400], fontSize: 12),
-                                      ),
-                                      if (item.product.size != null && item.product.size!.isNotEmpty) ...[
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF0882C8).withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            item.product.size!,
-                                            style: const TextStyle(color: Color(0xFF0882C8), fontSize: 9, fontWeight: FontWeight.bold),
-                                          ),
+                                  const SizedBox(width: 12),
+                                  // Name & qty
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.product.name,
+                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              'x ${item.quantity}',
+                                              style: TextStyle(color: Colors.grey[400], fontSize: 12),
+                                            ),
+                                            if ((item.product.size != null && item.product.size!.isNotEmpty && item.product.size != 'null') || 
+                                                (item.product.sizeNumeric != null && item.product.sizeNumeric!.isNotEmpty && item.product.sizeNumeric != 'null')) ...[
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFF0882C8).withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  '${item.product.size ?? ""} ${item.product.sizeNumeric ?? ""}'.trim(),
+                                                  style: const TextStyle(color: Color(0xFF0882C8), fontSize: 9, fontWeight: FontWeight.bold),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                        if (isOutOfStock)
+                                          const Text(
+                                            'Out of Stock',
+                                            style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
+                                          )
+                                        else if (isStockLow)
+                                          Text(
+                                            'Low Stock (${stockInfo['stock']})',
+                                            style: const TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold),
+                                          )
+                                        else
+                                          Text(
+                                            'Stock: ${stockInfo['stock']}',
+                                            style: TextStyle(color: Colors.green[400], fontSize: 10),
+                                          ),
                                       ],
+                                    ),
+                                  ),
+                                  // Price & Controls
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      _buildPriceDisplay(item),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          _qtyBtn(
+                                            Icons.remove,
+                                            () => provider.updateQuantity(item.product, item.quantity - 1),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          _qtyBtn(
+                                            Icons.add,
+                                            () {
+                                              if (item.quantity < item.product.stockCount) {
+                                                provider.updateQuantity(item.product, item.quantity + 1);
+                                              }
+                                            },
+                                          ),
+                                        ],
+                                      ),
                                     ],
                                   ),
-                                  if (isOutOfStock)
-                                    const Text(
-                                      'Out of Stock',
-                                      style: TextStyle(color: Colors.red, fontSize: 10, fontWeight: FontWeight.bold),
-                                    )
-                                  else if (isStockLow)
-                                    Text(
-                                      'Low Stock (${stockInfo['stock']})',
-                                      style: const TextStyle(color: Colors.orange, fontSize: 10, fontWeight: FontWeight.bold),
-                                    )
-                                  else
-                                    Text(
-                                      'Stock: ${stockInfo['stock']}',
-                                      style: TextStyle(color: Colors.green[400], fontSize: 10),
-                                    ),
                                 ],
                               ),
-                            ),
-                            // Price & Controls
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  'LKR ${item.totalPrice.toStringAsFixed(2)}',
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    _qtyBtn(
-                                      Icons.remove,
-                                      () => provider.updateQuantity(item.product, item.quantity - 1),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    _qtyBtn(
-                                      Icons.add,
-                                      () {
-                                        if (item.quantity < item.product.stockCount) {
-                                          provider.updateQuantity(item.product, item.quantity + 1);
-                                        }
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ],
+                              // Per-item discount dropdown row
+                              _ItemDiscountRow(
+                                item: item,
+                                onDiscountChanged: (pct) =>
+                                    provider.updateItemDiscount(item.product.id, pct),
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -514,11 +532,22 @@ class _CartPanelState extends State<CartPanel> {
                 // ── Subtotal ─────────────────────────────────────
                 _summaryRow('Sub Total', 'LKR ${provider.subtotal.toStringAsFixed(2)}'),
 
-                // ── Discount ─────────────────────────────────────
+                // ── Item-Level Discounts ──────────────────────────
+                if (provider.itemDiscountTotal > 0) ...[
+                  const SizedBox(height: 10),
+                  _summaryRow(
+                    'Item Discounts',
+                    '-LKR ${provider.itemDiscountTotal.toStringAsFixed(2)}',
+                    valueColor: const Color(0xFF4CAF50),
+                    labelColor: const Color(0xFF4CAF50),
+                  ),
+                ],
+
+                // ── Promo / Cart-Level Discounts ──────────────────
                 if (provider.discount > 0) ...[
                   const SizedBox(height: 10),
                   _summaryRow(
-                    'Total Discount',
+                    'Promo Discount',
                     '-LKR ${provider.discount.toStringAsFixed(2)}',
                     valueColor: Colors.green,
                     labelColor: Colors.green,
@@ -611,6 +640,139 @@ class _CartPanelState extends State<CartPanel> {
         Text(value,
             style: TextStyle(fontWeight: FontWeight.bold, color: valueColor)),
       ],
+    );
+  }
+
+  /// Shows struck-through original + green discounted price when a discount
+  /// is active; otherwise shows the plain total price.
+  Widget _buildPriceDisplay(item) {
+    if (!item.hasDiscount) {
+      return Text(
+        'LKR ${item.totalPrice.toStringAsFixed(2)}',
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          'LKR ${item.originalTotalPrice.toStringAsFixed(2)}',
+          style: const TextStyle(
+            fontSize: 10,
+            color: Colors.grey,
+            decoration: TextDecoration.lineThrough,
+            decorationColor: Colors.grey,
+          ),
+        ),
+        Text(
+          'LKR ${item.totalPrice.toStringAsFixed(2)}',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF4CAF50),
+            fontSize: 13,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Per-item discount dropdown widget
+// ─────────────────────────────────────────────────────────────────────────────
+class _ItemDiscountRow extends StatelessWidget {
+  final dynamic item;
+  final ValueChanged<double> onDiscountChanged;
+
+  const _ItemDiscountRow({
+    required this.item,
+    required this.onDiscountChanged,
+  });
+
+  static const _presets = [0.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 50.0];
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = item.itemDiscountPercent as double;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6.0),
+      child: Row(
+        children: [
+          const Icon(Icons.local_offer_outlined, size: 13, color: Colors.grey),
+          const SizedBox(width: 4),
+          const Text(
+            'Item Discount:',
+            style: TextStyle(fontSize: 11, color: Colors.grey),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            height: 28,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: selected > 0
+                  ? const Color(0xFF4CAF50).withOpacity(0.15)
+                  : const Color(0xFF1E1E2C),
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: selected > 0
+                    ? const Color(0xFF4CAF50).withOpacity(0.5)
+                    : Colors.grey.withOpacity(0.2),
+              ),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<double>(
+                value: selected,
+                isDense: true,
+                dropdownColor: const Color(0xFF1E1E2C),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: selected > 0 ? const Color(0xFF4CAF50) : Colors.grey,
+                ),
+                icon: Icon(
+                  Icons.arrow_drop_down,
+                  size: 16,
+                  color: selected > 0 ? const Color(0xFF4CAF50) : Colors.grey,
+                ),
+                items: _presets.map((pct) {
+                  return DropdownMenuItem<double>(
+                    value: pct,
+                    child: Text(
+                      pct == 0 ? 'None' : '${pct.toInt()}%',
+                      style: TextStyle(
+                        color: pct == 0 ? Colors.grey : const Color(0xFF4CAF50),
+                        fontWeight: pct > 0 ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) onDiscountChanged(val);
+                },
+              ),
+            ),
+          ),
+          if (selected > 0) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4CAF50).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(4),
+                border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.4)),
+              ),
+              child: Text(
+                'Save LKR ${item.discountAmount.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  color: Color(0xFF4CAF50),
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

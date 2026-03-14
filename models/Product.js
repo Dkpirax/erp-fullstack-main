@@ -65,6 +65,10 @@ const Product = sequelize.define('Product', {
         type: DataTypes.STRING(10),
         allowNull: true
     },
+    size_numeric: {
+        type: DataTypes.STRING(20),
+        allowNull: true
+    },
     supplier_id: {
         type: DataTypes.INTEGER,
         references: {

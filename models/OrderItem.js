@@ -33,6 +33,14 @@ const OrderItem = sequelize.define('OrderItem', {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false
     },
+    original_price: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true
+    },
+    discount_percent: {
+        type: DataTypes.DECIMAL(5, 2),
+        defaultValue: 0.00
+    },
     total_price: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false

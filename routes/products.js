@@ -62,7 +62,7 @@ router.get("/:id", authenticate, async (req, res) => {
 // --- POST create product ---
 router.post("/", authenticate, async (req, res) => {
     try {
-        const { name, sku, description, price, cost_price, stock_quantity, low_stock_threshold, image_url, supplier_id, category, barcode, size } = req.body;
+        const { name, sku, description, price, cost_price, stock_quantity, low_stock_threshold, image_url, supplier_id, category, barcode, size, size_numeric } = req.body;
         if (!name || !sku) return res.status(400).json({ detail: "Name and SKU are required" });
 
         const product = await Product.create({
@@ -71,7 +71,7 @@ router.post("/", authenticate, async (req, res) => {
             cost_price: parseFloat(cost_price) || 0,
             stock_quantity: parseInt(stock_quantity) || 0,
             low_stock_threshold: parseInt(low_stock_threshold) || 10,
-            image_url, supplier_id, category, barcode, size
+            image_url, supplier_id, category, barcode, size, size_numeric
         });
 
         // Notify all clients
@@ -108,7 +108,7 @@ router.put("/:id", authenticate, async (req, res) => {
         const product = await Product.findByPk(req.params.id);
         if (!product) return res.status(404).json({ detail: "Product not found" });
 
-        const { name, sku, description, price, cost_price, stock_quantity, low_stock_threshold, image_url, supplier_id, category, barcode, size } = req.body;
+        const { name, sku, description, price, cost_price, stock_quantity, low_stock_threshold, image_url, supplier_id, category, barcode, size, size_numeric } = req.body;
 
         await product.update({
             ...(name !== undefined && { name }),
@@ -123,6 +123,7 @@ router.put("/:id", authenticate, async (req, res) => {
             ...(category !== undefined && { category }),
             ...(barcode !== undefined && { barcode }),
             ...(size !== undefined && { size }),
+            ...(size_numeric !== undefined && { size_numeric }),
         });
 
         const io = req.app.get('io');

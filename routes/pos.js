@@ -113,6 +113,8 @@ router.post("/orders", authenticate, async (req, res) => {
                 product_id: item.product_id,
                 quantity: item.quantity,
                 unit_price: item.unit_price,
+                original_price: item.original_price || item.unit_price,
+                discount_percent: item.discount_percent || 0,
                 total_price: item.quantity * item.unit_price
             }));
 

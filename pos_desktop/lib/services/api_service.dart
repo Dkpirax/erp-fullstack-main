@@ -231,6 +231,8 @@ class ApiService {
           'product_id': item['productId'],
           'quantity': item['quantity'],
           'unit_price': item['price'],
+          'original_price': item['originalPrice'],
+          'discount_percent': item['itemDiscountPercent'],
         }).toList(),
       };
 

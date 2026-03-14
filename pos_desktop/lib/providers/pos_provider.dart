@@ -226,7 +226,12 @@ class PosProvider with ChangeNotifier {
     return ['All', ...cats];
   }
 
+  /// Sum of all discounted line totals (already accounts for per-item discounts).
   double get subtotal => _cart.fold(0, (sum, item) => sum + item.totalPrice);
+
+  /// Total savings from per-item discounts across the whole cart.
+  double get itemDiscountTotal => _cart.fold(0, (sum, item) => sum + item.discountAmount);
+
   double get promoDiscount => _selectedPromo?.calculateDiscount(subtotal) ?? 0;
   double get totalPercentageDiscount => (subtotal - promoDiscount) * (_percentageDiscount / 100);
   double get discount => promoDiscount + totalPercentageDiscount + _manualDiscount;
@@ -453,20 +458,31 @@ class PosProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Sets the item-level discount percentage for a specific product in the cart.
+  void updateItemDiscount(String productId, double discountPercent) {
+    final index = _cart.indexWhere((item) => item.product.id == productId);
+    if (index >= 0) {
+      _cart[index].itemDiscountPercent = discountPercent.clamp(0, 100);
+      notifyListeners();
+    }
+  }
+
   Future<bool> checkout(String paymentMethod) async {
     if (_cart.isEmpty) return false;
     final orderData = _cart.map((item) => {
       'productId': item.product.id,
       'quantity': item.quantity,
-      'price': item.product.price,
+      'price': item.totalPrice / item.quantity,   // discounted unit price
+      'originalPrice': item.product.price,         // original unit price for records
+      'itemDiscountPercent': item.itemDiscountPercent,
     }).toList();
     _isLoading = true;
     notifyListeners();
     final success = await _apiService.submitOrder(
       orderData, 
       total, 
-      discountAmount: discount, 
-      subtotalAmount: subtotal, 
+      discountAmount: discount + itemDiscountTotal, 
+      subtotalAmount: _cart.fold(0, (s, i) => s + i.originalTotalPrice), 
       paymentMethod: paymentMethod
     );
     _isLoading = false;
