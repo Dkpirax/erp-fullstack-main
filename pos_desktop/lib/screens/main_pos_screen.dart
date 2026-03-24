@@ -134,7 +134,7 @@ class _MainPosScreenState extends State<MainPosScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Ahu wears',
+              'Ahu mens',
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),

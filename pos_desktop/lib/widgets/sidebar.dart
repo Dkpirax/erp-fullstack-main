@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import '../screens/history_screen.dart';
 import '../screens/main_pos_screen.dart';
 import '../screens/promos_screen.dart';
@@ -103,7 +104,7 @@ class Sidebar extends StatelessWidget {
               icon: Icons.account_balance,
               label: 'Accounts',
               isActive: activePage == 'Accounts',
-              onTap: () => _navigateTo(context, const AccountsScreen(), 'Accounts'),
+              onTap: () => _showPasscodeDialog(context),
             ),
           ],
           const SizedBox(height: 32),
@@ -152,6 +153,75 @@ class Sidebar extends StatelessWidget {
         transitionDuration: Duration.zero,
         reverseTransitionDuration: Duration.zero,
       ),
+    );
+  }
+
+  void _showPasscodeDialog(BuildContext context) {
+    final TextEditingController controller = TextEditingController();
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+          child: AlertDialog(
+            backgroundColor: const Color(0xFF1A1A28),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Security Check', style: TextStyle(color: Colors.white)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Please enter the passcode to access Accounts.',
+                    style: TextStyle(color: Colors.grey, fontSize: 13)),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  obscureText: true,
+                  style: const TextStyle(color: Colors.white),
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    hintText: 'Passcode',
+                    hintStyle: const TextStyle(color: Colors.grey),
+                    filled: true,
+                    fillColor: Colors.white.withOpacity(0.05),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none),
+                  ),
+                  onSubmitted: (value) {
+                    if (value == '2000') {
+                      Navigator.of(context).pop();
+                      _navigateTo(context, const AccountsScreen(), 'Accounts');
+                    }
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0882C8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () {
+                  if (controller.text == '2000') {
+                    Navigator.of(context).pop();
+                    _navigateTo(context, const AccountsScreen(), 'Accounts');
+                  }
+                },
+                child: const Text('Confirm'),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+        );
+      },
     );
   }
 

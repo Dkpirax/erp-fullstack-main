@@ -380,4 +380,43 @@ router.get('/supplier-scorecard/:id', async (req, res) => {
   }
 });
 
+/**
+ * POST /api/elais/checkout-analysis
+ * Calculates profit and provides AI-driven insights for the current cart.
+ */
+router.post('/checkout-analysis', async (req, res) => {
+  try {
+    const { items, cart_discount = 0 } = req.body;
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ error: 'items array is required' });
+    }
+
+    let totalRevenue = 0;
+    let totalCost = 0;
+
+    items.forEach(item => {
+      totalRevenue += (item.price || 0) * (item.qty || 0);
+      totalCost += (item.buying_price || 0) * (item.qty || 0);
+    });
+
+    const profit = totalRevenue - totalCost - cart_discount;
+
+    // AI prompt for contextual advice
+    const prompt = `Current Cart Items: ${JSON.stringify(items.map(i => ({ id: i.id, qty: i.qty })))}\n` +
+      `Total Profit for this transaction: LKR ${profit.toFixed(2)}\n` +
+      `Provide ONE short sentence of business advice (e.g., upsell, inventory warning, or margin tip). Max 15 words.`;
+
+    const message = await askAI(prompt, 'You are a retail POS assistant. Give concise commerce-focused advice.');
+
+    res.json({
+      profit: parseFloat(profit.toFixed(2)),
+      message,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('Checkout analysis error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

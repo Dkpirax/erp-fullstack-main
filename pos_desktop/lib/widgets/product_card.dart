@@ -101,12 +101,18 @@ class ProductCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Text(
-                        '${product.stockCount} items',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
+                      Consumer<PosProvider>(
+                        builder: (context, provider, child) {
+                          final info = provider.getProductStockInfo(product.id);
+                          final dynamicStock = info['stock'] ?? 0;
+                          return Text(
+                            '$dynamicStock items',
+                            style: TextStyle(
+                              color: dynamicStock <= 5 ? Colors.red : Colors.grey,
+                              fontSize: 12,
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),

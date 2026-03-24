@@ -50,11 +50,17 @@ class PosProvider with ChangeNotifier {
   List<Map<String, String>> _chatHistory = []; // {role: 'user'|'assistant', content: '...'}
   String? _dailyBrief;
   bool _elaisLoading = false;
+  Map<String, dynamic>? _elaisCheckoutAnalysis;
+  Map<String, dynamic>? _elaisBundleSuggestion;
+  bool _isElaisAnalysisLoading = false;
 
   List<Map<String, dynamic>> get elaisAlerts => _elaisAlerts;
   List<Map<String, String>> get chatHistory => _chatHistory;
   String? get dailyBrief => _dailyBrief;
   bool get elaisLoading => _elaisLoading;
+  Map<String, dynamic>? get elaisCheckoutAnalysis => _elaisCheckoutAnalysis;
+  Map<String, dynamic>? get elaisBundleSuggestion => _elaisBundleSuggestion;
+  bool get isElaisAnalysisLoading => _isElaisAnalysisLoading;
 
   // Settings
   bool _useOnScreenKeyboard = false;
@@ -157,6 +163,7 @@ class PosProvider with ChangeNotifier {
 
   void setSelectedPrinterName(String? name) {
     _selectedPrinterName = name;
+    updateSetting('selected_printer_name', name ?? '');
     notifyListeners();
   }
 
@@ -279,6 +286,14 @@ class PosProvider with ChangeNotifier {
   double get discount => promoDiscount + totalPercentageDiscount + _manualDiscount;
   double get total => (subtotal - discount) < 0 ? 0 : (subtotal - discount);
   int get totalItems => _cart.fold(0, (sum, item) => sum + item.quantity);
+
+  /// Local profit calculation for instant UI feedback.
+  double get estimatedProfit {
+    if (_cart.isEmpty) return 0.0;
+    double totalBuyingCost = _cart.fold(0, (sum, item) => sum + (item.product.costPrice * item.quantity));
+    // Profit = Total (after all discounts) - Total Cost
+    return total - totalBuyingCost;
+  }
 
 
   Future<bool> login(String username, String password) async {
@@ -409,6 +424,7 @@ class PosProvider with ChangeNotifier {
       return 'Minimum order of LKR ${match.minPurchase.toStringAsFixed(2)} required for "$upperCode".';
     }
     _selectedPromo = match;
+    _triggerAnalysis();
     notifyListeners();
     return null;
   }
@@ -445,6 +461,11 @@ class PosProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  void _triggerAnalysis() {
+    refreshElaisAnalysis();
+    fetchBundleSuggestion();
+  }
+
   List<Product> get filteredProducts {
     if (_selectedCategory == null || _selectedCategory == 'All') return _products;
     return _products.where((p) => p.category == _selectedCategory).toList();
@@ -464,6 +485,7 @@ class PosProvider with ChangeNotifier {
     } else {
       _cart.add(CartItem(product: product));
     }
+    _triggerAnalysis();
     notifyListeners();
   }
 
@@ -475,6 +497,7 @@ class PosProvider with ChangeNotifier {
       } else {
         _cart[index].quantity = quantity;
       }
+      _triggerAnalysis();
       notifyListeners();
     }
   }
@@ -500,6 +523,8 @@ class PosProvider with ChangeNotifier {
 
   void clearCart() {
     _cart.clear();
+    _elaisCheckoutAnalysis = null;
+    _elaisBundleSuggestion = null;
     notifyListeners();
   }
 
@@ -508,6 +533,7 @@ class PosProvider with ChangeNotifier {
     final index = _cart.indexWhere((item) => item.product.id == productId);
     if (index >= 0) {
       _cart[index].itemDiscountPercent = discountPercent.clamp(0, 100);
+      _triggerAnalysis();
       notifyListeners();
     }
   }
@@ -664,6 +690,56 @@ class PosProvider with ChangeNotifier {
     }
   }
 
+  Future<void> refreshElaisAnalysis() async {
+    if (_cart.isEmpty) {
+      _elaisCheckoutAnalysis = null;
+      notifyListeners();
+      return;
+    }
+    
+    _isElaisAnalysisLoading = true;
+    notifyListeners();
+
+    try {
+      final items = _cart.map((e) => {
+        'id': e.product.id,
+        'qty': e.quantity,
+        'price': e.totalPrice / e.quantity,
+        'buying_price': e.product.buyingPrice,
+      }).toList();
+      
+      final res = await _apiService.post('/api/elais/checkout-analysis', {
+        'items': items,
+        'cart_discount': discount,
+      });
+      if (res != null) {
+        _elaisCheckoutAnalysis = Map<String, dynamic>.from(res);
+      }
+    } catch (e) {
+      debugPrint('Elais Analysis Error: $e');
+    } finally {
+      _isElaisAnalysisLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchBundleSuggestion() async {
+    if (_cart.isEmpty) {
+      _elaisBundleSuggestion = null;
+      notifyListeners();
+      return;
+    }
+    try {
+      final res = await _apiService.post('/api/elais/bundle-suggestion', {
+        'product_ids': _cart.map((e) => int.tryParse(e.product.id) ?? 0).toList()
+      });
+      if (res != null) {
+        _elaisBundleSuggestion = Map<String, dynamic>.from(res['suggestion'] ?? {});
+      }
+    } catch (_) {}
+    notifyListeners();
+  }
+
   void clearElaisChat() {
     _chatHistory.clear();
     notifyListeners();
@@ -755,6 +831,9 @@ class PosProvider with ChangeNotifier {
         if (settings['elais_online_key'] != null) _elaisOnlineKey = settings['elais_online_key'];
         if (settings['elais_online_model'] != null) _elaisOnlineModel = settings['elais_online_model'];
         if (settings['elais_personality'] != null) _elaisPersonality = settings['elais_personality'];
+        if (settings['selected_printer_name'] != null && settings['selected_printer_name'].toString().isNotEmpty) {
+          _selectedPrinterName = settings['selected_printer_name'];
+        }
         notifyListeners();
       }
     } catch (_) {

@@ -97,18 +97,8 @@ class _CartPanelState extends State<CartPanel> {
               ? provider.orderHistory.first 
               : tempOrder;
 
-          final printer = provider.selectedPrinterName;
-          if (printer != null && printer.isNotEmpty) {
-            final printError = await ReceiptService.printReceipt(finalOrder, printer);
-            if (printError != null && mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                content: Text('⚠️ Print failed: $printError'),
-                backgroundColor: Colors.orange,
-              ));
-            }
-          } else {
-            await ReceiptService.showPrintPreview(context, finalOrder);
-          }
+          // Show the window's print selection pop up to print
+          await ReceiptService.showPrintPreview(context, finalOrder);
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(

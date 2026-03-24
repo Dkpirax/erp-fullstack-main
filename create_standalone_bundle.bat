@@ -1,4 +1,4 @@
-@echo off
+@echo on
 setlocal enabledelayedexpansion
 
 echo ===================================================
@@ -9,10 +9,25 @@ echo.
 set DIST_DIR=%~dp0DIST
 set APP_DIR=%DIST_DIR%\ElaraPOS
 
-if exist "%DIST_DIR%" rd /s /q "%DIST_DIR%"
+echo [0/6] Cleaning old DIST folder...
+taskkill /F /IM node.exe /T
+taskkill /F /IM elara_pos.exe /T
+timeout /t 5 /nobreak >nul
+
+if exist "%DIST_DIR%" (
+    rd /s /q "%DIST_DIR%"
+    timeout /t 3 /nobreak >nul
+    rd /s /q "%DIST_DIR%"
+    if exist "%DIST_DIR%" (
+        echo [ERROR] Please manually delete the DIST folder, then re-run.
+        pause
+        exit /b 1
+    )
+)
+
 mkdir "%APP_DIR%"
 
-echo [1/4] Building Flutter Desktop (Release)...
+echo [1/6] Building Flutter Desktop (Release)...
 cd /d "%~dp0pos_desktop"
 call flutter clean
 call flutter pub get
@@ -23,10 +38,10 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b %ERRORLEVEL%
 )
 
-echo [2/4] Copying Flutter App files...
+echo [2/6] Copying Flutter App files...
 xcopy /E /I /Y "%~dp0pos_desktop\build\windows\x64\runner\Release\*" "%APP_DIR%\"
 
-echo [3/4] Preparing Backend...
+echo [3/6] Preparing Backend...
 mkdir "%APP_DIR%\backend"
 xcopy /E /I /Y "%~dp0config" "%APP_DIR%\backend\config"
 xcopy /E /I /Y "%~dp0middleware" "%APP_DIR%\backend\middleware"
@@ -43,7 +58,17 @@ copy /Y "%~dp0server.js" "%APP_DIR%\backend\"
 copy /Y "%~dp0.env" "%APP_DIR%\backend\"
 copy /Y "%~dp0users.json" "%APP_DIR%\backend\"
 copy /Y "%~dp0accounts_db.js" "%APP_DIR%\backend\"
-if exist "%~dp0accounts.db" copy /Y "%~dp0accounts.db" "%APP_DIR%\backend\"
+if exist "%~dp0accounts.db" (
+    copy /Y "%~dp0accounts.db" "%APP_DIR%\backend\"
+) else (
+    echo [WARNING] accounts.db not found, skipping...
+)
+
+echo [4/6] Dumping erp_db for bundle...
+C:\xampp\mysql\bin\mysqldump.exe -u root --password= erp_db > "%APP_DIR%\backend\erp_db.sql"
+if %ERRORLEVEL% NEQ 0 (
+    echo [WARNING] MySQL dump failed! Check if erp_db exists and MySQL is running.
+)
 
 :: Create a clean package.json for backend (removing mobile deps to avoid MAX_PATH issues)
 echo { > "%APP_DIR%\backend\package.json"
@@ -67,13 +92,17 @@ echo     "swagger-ui-express": "^5.0.0", >> "%APP_DIR%\backend\package.json"
 echo     "better-sqlite3": "^11.0.0" >> "%APP_DIR%\backend\package.json"
 echo   } >> "%APP_DIR%\backend\package.json"
 echo } >> "%APP_DIR%\backend\package.json"
-copy /Y "%~dp0users.json" "%APP_DIR%\backend\"
-copy /Y "%~dp0accounts_db.js" "%APP_DIR%\backend\"
-if exist "%~dp0accounts.db" copy /Y "%~dp0accounts.db" "%APP_DIR%\backend\"
 
-echo [4/5] Installing Backend Dependencies...
+echo [4.5/6] Bundling Node.js v22...
+:: Download Node v22 portable (no install needed)
+powershell -Command "Invoke-WebRequest -Uri 'https://nodejs.org/dist/v22.14.0/node-v22.14.0-win-x64.zip' -OutFile '%TEMP%\node22.zip' -UseBasicParsing"
+powershell -Command "Expand-Archive -Path '%TEMP%\node22.zip' -DestinationPath '%TEMP%\node22' -Force"
+xcopy /E /I /Y "%TEMP%\node22\node-v22.14.0-win-x64" "%APP_DIR%\node_runtime"
+
+echo [5/6] Installing Backend Dependencies using bundled Node v22...
 cd /d "%APP_DIR%\backend"
-call npm install --production
+set "PATH=%APP_DIR%\node_runtime;%PATH%"
+"%APP_DIR%\node_runtime\node.exe" "%APP_DIR%\node_runtime\node_modules\npm\bin\npm-cli.js" install --production
 if %ERRORLEVEL% NEQ 0 (
     echo npm install failed!
     pause
@@ -83,16 +112,37 @@ cd /d "%~dp0"
 
 :: Note: AI and Accounts are integrated into the main backend above.
 
-echo [5/5] Creating Launchers...
+echo [6/6] Creating Launchers...
 
 :: ── START_POS.vbs ──────────────────────────────────────────
 echo Set WshShell = CreateObject("WScript.Shell") > "%APP_DIR%\START_POS.vbs"
 echo Set fso = CreateObject("Scripting.FileSystemObject") >> "%APP_DIR%\START_POS.vbs"
+echo Set shellApp = CreateObject("Shell.Application") >> "%APP_DIR%\START_POS.vbs"
+echo. >> "%APP_DIR%\START_POS.vbs"
+echo ' ── DATABASE MAINTENANCE ────────────────────────────── >> "%APP_DIR%\START_POS.vbs"
+echo If fso.FileExists("backend\accounts.db-shm") Then fso.DeleteFile("backend\accounts.db-shm") >> "%APP_DIR%\START_POS.vbs"
+echo If fso.FileExists("backend\accounts.db-wal") Then fso.DeleteFile("backend\accounts.db-wal") >> "%APP_DIR%\START_POS.vbs"
+echo If fso.FileExists("backend\old_accounts.db") Then fso.DeleteFile("backend\old_accounts.db") >> "%APP_DIR%\START_POS.vbs"
+echo If fso.FileExists("backend\accounts.db.old") Then fso.DeleteFile("backend\accounts.db.old") >> "%APP_DIR%\START_POS.vbs"
+echo. >> "%APP_DIR%\START_POS.vbs"
+echo ' ── PORT 3000 CONFLICT PREVENTION ──────────────────── >> "%APP_DIR%\START_POS.vbs"
+echo Dim portCheck, pidLine, pid >> "%APP_DIR%\START_POS.vbs"
+echo Set objExec = WshShell.Exec("cmd /c netstat -ano ^| findstr :3000") >> "%APP_DIR%\START_POS.vbs"
+echo portCheck = objExec.StdOut.ReadAll >> "%APP_DIR%\START_POS.vbs"
+echo If InStr(portCheck, "LISTENING") ^> 0 Then >> "%APP_DIR%\START_POS.vbs"
+echo     WshShell.Run "cmd /c for /f ""tokens=5"" %%a in ('netstat -aon ^| findstr :3000') do taskkill /f /pid %%a", 0, True >> "%APP_DIR%\START_POS.vbs"
+echo     WScript.Sleep 1000 >> "%APP_DIR%\START_POS.vbs"
+echo     Set objExec2 = WshShell.Exec("cmd /c netstat -ano ^| findstr :3000") >> "%APP_DIR%\START_POS.vbs"
+echo     If InStr(objExec2.StdOut.ReadAll, "LISTENING") ^> 0 Then >> "%APP_DIR%\START_POS.vbs"
+echo         MsgBox "ElaraPOS could not start because port 3000 is in use by another application." ^& vbCrLf ^& _ >> "%APP_DIR%\START_POS.vbs"
+echo                "Please restart your computer and try again.", vbCritical, "Port Conflict" >> "%APP_DIR%\START_POS.vbs"
+echo         WScript.Quit >> "%APP_DIR%\START_POS.vbs"
+echo     End If >> "%APP_DIR%\START_POS.vbs"
+echo End If >> "%APP_DIR%\START_POS.vbs"
 echo. >> "%APP_DIR%\START_POS.vbs"
 echo ' ── OLLAMA CHECK ───────────────────────────────────── >> "%APP_DIR%\START_POS.vbs"
 echo Dim ollamaInstalled >> "%APP_DIR%\START_POS.vbs"
 echo ollamaInstalled = False >> "%APP_DIR%\START_POS.vbs"
-echo. >> "%APP_DIR%\START_POS.vbs"
 echo If fso.FileExists("C:\Users\" ^& WshShell.ExpandEnvironmentStrings("%%USERNAME%%") ^& "\AppData\Local\Programs\Ollama\ollama.exe") Then >> "%APP_DIR%\START_POS.vbs"
 echo     ollamaInstalled = True >> "%APP_DIR%\START_POS.vbs"
 echo ElseIf WshShell.Run("cmd /c where ollama", 0, True) = 0 Then >> "%APP_DIR%\START_POS.vbs"
@@ -170,7 +220,6 @@ echo                "  4. Click Save and Test Connection" ^& vbCrLf ^& vbCrLf ^&
 echo                "ElaraPOS will now start without AI features.", _ >> "%APP_DIR%\START_POS.vbs"
 echo                vbInformation, "Elais AI Setup Options" >> "%APP_DIR%\START_POS.vbs"
 echo     End If >> "%APP_DIR%\START_POS.vbs"
-echo. >> "%APP_DIR%\START_POS.vbs"
 echo Else >> "%APP_DIR%\START_POS.vbs"
 echo     If WshShell.Run("cmd /c netstat -ano ^| findstr :11434", 0, True) ^<^> 0 Then >> "%APP_DIR%\START_POS.vbs"
 echo         WshShell.Run "ollama serve", 0, False >> "%APP_DIR%\START_POS.vbs"
@@ -181,17 +230,37 @@ echo. >> "%APP_DIR%\START_POS.vbs"
 echo ' ── START XAMPP ─────────────────────────────────────── >> "%APP_DIR%\START_POS.vbs"
 echo If WshShell.Run("cmd /c tasklist ^| findstr /I apache_httpd.exe", 0, True) ^<^> 0 Then >> "%APP_DIR%\START_POS.vbs"
 echo     WshShell.Run "C:\xampp\xampp_start.exe", 0, False >> "%APP_DIR%\START_POS.vbs"
-echo     WScript.Sleep 3000 >> "%APP_DIR%\START_POS.vbs"
+echo     WScript.Sleep 2000 >> "%APP_DIR%\START_POS.vbs"
 echo End If >> "%APP_DIR%\START_POS.vbs"
 echo. >> "%APP_DIR%\START_POS.vbs"
 echo If WshShell.Run("cmd /c netstat -ano ^| findstr :3306", 0, True) ^<^> 0 Then >> "%APP_DIR%\START_POS.vbs"
 echo     WshShell.Run "C:\xampp\mysql\bin\mysqld.exe --port=3306", 0, False >> "%APP_DIR%\START_POS.vbs"
-echo     WScript.Sleep 3000 >> "%APP_DIR%\START_POS.vbs"
+echo     WScript.Sleep 5000 >> "%APP_DIR%\START_POS.vbs"
 echo End If >> "%APP_DIR%\START_POS.vbs"
 echo. >> "%APP_DIR%\START_POS.vbs"
+echo ' ── DATABASE INITIALIZATION ─────────────────────────── >> "%APP_DIR%\START_POS.vbs"
+echo Dim dbExists >> "%APP_DIR%\START_POS.vbs"
+echo dbExists = WshShell.Run("cmd /c C:\xampp\mysql\bin\mysql.exe -u root --password= -e ""SHOW DATABASES LIKE 'erp_db';"" ^| findstr erp_db", 0, True) >> "%APP_DIR%\START_POS.vbs"
+echo If dbExists ^<^> 0 Then >> "%APP_DIR%\START_POS.vbs"
+echo     If fso.FileExists("backend\erp_db.sql") And fso.GetFile("backend\erp_db.sql").Size ^> 100 Then >> "%APP_DIR%\START_POS.vbs"
+echo         importCall = WshShell.Run("cmd /c C:\xampp\mysql\bin\mysql.exe -u root --password= -e ""CREATE DATABASE IF NOT EXISTS erp_db;"" ^&^& C:\xampp\mysql\bin\mysql.exe -u root --password= erp_db ^< backend\erp_db.sql", 0, True) >> "%APP_DIR%\START_POS.vbs"
+echo         If importCall ^<^> 0 Then >> "%APP_DIR%\START_POS.vbs"
+echo             MsgBox "Database setup failed. Please check XAMPP MySQL is running and try again.", vbExclamation, "DB Error" >> "%APP_DIR%\START_POS.vbs"
+echo         End If >> "%APP_DIR%\START_POS.vbs"
+echo     End If >> "%APP_DIR%\START_POS.vbs"
+echo End If >> "%APP_DIR%\START_POS.vbs"
+echo. >> "%APP_DIR%\START_POS.vbs"
+echo ' ── CREATE DESKTOP SHORTCUT ────────────────────────── >> "%APP_DIR%\START_POS.vbs"
+echo desktopPath = WshShell.SpecialFolders("Desktop") >> "%APP_DIR%\START_POS.vbs"
+echo Set lnk = WshShell.CreateShortcut(desktopPath ^& "\ElaraPOS.lnk") >> "%APP_DIR%\START_POS.vbs"
+echo lnk.TargetPath = WScript.ScriptFullName >> "%APP_DIR%\START_POS.vbs"
+echo lnk.WorkingDirectory = fso.GetParentFolderName(WScript.ScriptFullName) >> "%APP_DIR%\START_POS.vbs"
+echo lnk.IconLocation = lnk.WorkingDirectory ^& "\elara_pos.exe,0" >> "%APP_DIR%\START_POS.vbs"
+echo lnk.Save >> "%APP_DIR%\START_POS.vbs"
+echo. >> "%APP_DIR%\START_POS.vbs"
 echo ' ── START BACKEND ───────────────────────────────────── >> "%APP_DIR%\START_POS.vbs"
-echo WshShell.Run "cmd /c cd backend ^& node server.js", 0, False >> "%APP_DIR%\START_POS.vbs"
-echo WScript.Sleep 5000 >> "%APP_DIR%\START_POS.vbs"
+echo WshShell.Run "cmd /c cd backend ^& ..\node_runtime\node.exe server.js", 0, False >> "%APP_DIR%\START_POS.vbs"
+echo WScript.Sleep 3000 >> "%APP_DIR%\START_POS.vbs"
 echo. >> "%APP_DIR%\START_POS.vbs"
 echo ' ── START POS APP ───────────────────────────────────── >> "%APP_DIR%\START_POS.vbs"
 echo WshShell.Run "elara_pos.exe", 1, True >> "%APP_DIR%\START_POS.vbs"
@@ -202,6 +271,13 @@ echo echo ================================================= >> "%APP_DIR%\LAUNCH
 echo echo   Elara POS Launcher (with Elais AI) >> "%APP_DIR%\LAUNCHER.bat"
 echo echo ================================================= >> "%APP_DIR%\LAUNCHER.bat"
 echo echo. >> "%APP_DIR%\LAUNCHER.bat"
+echo. >> "%APP_DIR%\LAUNCHER.bat"
+echo :: ── DATABASE MAINTENANCE ──────────────────────── >> "%APP_DIR%\LAUNCHER.bat"
+echo if exist "backend\accounts.db-shm" del /q "backend\accounts.db-shm" >> "%APP_DIR%\LAUNCHER.bat"
+echo if exist "backend\accounts.db-wal" del /q "backend\accounts.db-wal" >> "%APP_DIR%\LAUNCHER.bat"
+echo if exist "backend\old_accounts.db" del /q "backend\old_accounts.db" >> "%APP_DIR%\LAUNCHER.bat"
+echo if exist "backend\accounts.db.old" del /q "backend\accounts.db.old" >> "%APP_DIR%\LAUNCHER.bat"
+echo if exist "backend\pos.db" del /q "backend\pos.db" >> "%APP_DIR%\LAUNCHER.bat"
 echo. >> "%APP_DIR%\LAUNCHER.bat"
 echo :: ── OLLAMA CHECK ─────────────────────────────────── >> "%APP_DIR%\LAUNCHER.bat"
 echo set OLLAMA_FOUND=0 >> "%APP_DIR%\LAUNCHER.bat"
@@ -232,7 +308,7 @@ echo                 timeout /t 3 /nobreak ^>nul >> "%APP_DIR%\LAUNCHER.bat"
 echo                 echo [Elais] AI is ready! >> "%APP_DIR%\LAUNCHER.bat"
 echo             ) else ( >> "%APP_DIR%\LAUNCHER.bat"
 echo                 echo [Elais] Model skipped. Run "ollama pull phi3:mini" later to enable AI. >> "%APP_DIR%\LAUNCHER.bat"
-echo             ) >> "%APP_DIR%\LAUNCHER.bat"
+) >> "%APP_DIR%\LAUNCHER.bat"
 echo         ) else ( >> "%APP_DIR%\LAUNCHER.bat"
 echo             echo [Elais] Download failed. Check your internet and try again. >> "%APP_DIR%\LAUNCHER.bat"
 echo         ) >> "%APP_DIR%\LAUNCHER.bat"
@@ -291,7 +367,7 @@ echo     echo MySQL already running on 3306, skipping... >> "%APP_DIR%\LAUNCHER.
 echo ) >> "%APP_DIR%\LAUNCHER.bat"
 echo. >> "%APP_DIR%\LAUNCHER.bat"
 echo :: ── START BACKEND ────────────────────────────────── >> "%APP_DIR%\LAUNCHER.bat"
-echo start /min cmd /k "cd backend ^&^& node server.js" >> "%APP_DIR%\LAUNCHER.bat"
+echo start /min cmd /k "cd backend ^&^& ..\node_runtime\node.exe server.js" >> "%APP_DIR%\LAUNCHER.bat"
 echo timeout /t 5 /nobreak ^>nul >> "%APP_DIR%\LAUNCHER.bat"
 echo. >> "%APP_DIR%\LAUNCHER.bat"
 echo :: ── START POS APP ────────────────────────────────── >> "%APP_DIR%\LAUNCHER.bat"

@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import '../providers/pos_provider.dart';
 import '../models/order.dart';
+import '../models/cart_item.dart';
 import '../services/receipt_service.dart';
 
 class CartPanel extends StatefulWidget {
@@ -21,8 +22,6 @@ class _CartPanelState extends State<CartPanel> {
   final _manualDiscountController = TextEditingController();
   String? _promoError;
   bool _applying = false;
-  Map<String, dynamic>? _elaisSuggestion;
-  bool _loadingSuggestion = false;
 
   @override
   void initState() {
@@ -38,27 +37,10 @@ class _CartPanelState extends State<CartPanel> {
           _applyPromo(provider);
         }
       };
-      _fetchSuggestion();
     });
   }
 
-  Future<void> _fetchSuggestion() async {
-    final provider = Provider.of<PosProvider>(context, listen: false);
-    if (provider.cart.isEmpty) {
-      setState(() => _elaisSuggestion = null);
-      return;
-    }
-    setState(() => _loadingSuggestion = true);
-    final suggestion = await provider.getBundleSuggestion(
-      provider.cart.map((e) => int.tryParse(e.product.id) ?? 0).toList(),
-    );
-    if (mounted) {
-      setState(() {
-        _elaisSuggestion = suggestion;
-        _loadingSuggestion = false;
-      });
-    }
-  }
+  // Removed local _fetchSuggestion logic as AI analysis is now reactive via PosProvider
 
   @override
   void dispose() {
@@ -124,13 +106,8 @@ class _CartPanelState extends State<CartPanel> {
             ? provider.orderHistory.first 
             : tempOrder;
 
-        // Always attempt direct print first. ReceiptService handles auto-detect if printer is null.
-        final printError = await ReceiptService.printReceipt(finalOrder, provider.selectedPrinterName);
-        
-        if (printError != null && mounted) {
-          // If direct print fails (e.g. no printer found), fallback to preview
-          await ReceiptService.showPrintPreview(context, finalOrder);
-        }
+        // Show the window's print selection pop up to print
+        await ReceiptService.showPrintPreview(context, finalOrder);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -206,38 +183,16 @@ class _CartPanelState extends State<CartPanel> {
             ),
           ),
           const SizedBox(height: 12),
-          // --- Elais Bundle Suggestion Chip ---
+          // --- Elais AI Intelligence Section ---
           if (provider.cart.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: _loadingSuggestion
-                    ? const SizedBox(height: 30, child: Center(child: LinearProgressIndicator(minHeight: 1, color: const Color(0xFFD2042D))))
-                    : _elaisSuggestion != null
-                        ? Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFD2042D).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: const Color(0xFFD2042D).withOpacity(0.3)),
-                            ),
-                            child: Row(children: [
-                              const Icon(Icons.auto_awesome, color: const Color(0xFFD2042D), size: 16),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  _elaisSuggestion!['message'] ?? '',
-                                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () => setState(() => _elaisSuggestion = null),
-                                child: const Icon(Icons.close, color: Colors.white38, size: 14),
-                              ),
-                            ]),
-                          )
-                        : const SizedBox.shrink(),
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 4.0),
+              child: Column(
+                children: [
+                  // 2. Profit Analysis (Blue Box) - Instant updates from local calculated profit
+                  // 2. Profit Analysis (Blue Box) - Removed as per user request
+// _buildProfitBox(provider),
+                ],
               ),
             ),
           const SizedBox(height: 12),
@@ -699,9 +654,76 @@ class _CartPanelState extends State<CartPanel> {
     );
   }
 
-  /// Shows struck-through original + green discounted price when a discount
-  /// is active; otherwise shows the plain total price.
-  Widget _buildPriceDisplay(item) {
+  Widget _buildBundleBox(String message) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFD2042D).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFD2042D).withOpacity(0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.auto_awesome, color: Color(0xFFD2042D), size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfitBox(PosProvider provider) {
+    final profit = provider.estimatedProfit;
+    final aiMessage = provider.elaisCheckoutAnalysis?['message'] as String?;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0882C8).withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFF0882C8).withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.analytics_outlined, color: Color(0xFF0882C8), size: 14),
+              const SizedBox(width: 8),
+              Text(
+                'PROFIT: LKR ${profit.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (provider.isElaisAnalysisLoading) ...[
+                 const SizedBox(width: 8),
+                 const SizedBox(width: 10, height: 10, child: CircularProgressIndicator(strokeWidth: 1.5, color: Color(0xFF0882C8))),
+              ],
+            ],
+          ),
+          if (aiMessage != null && aiMessage.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0, left: 22.0),
+              child: Text(
+                aiMessage,
+                style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 10, fontStyle: FontStyle.italic),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPriceDisplay(CartItem item) {
     if (!item.hasDiscount) {
       return Text(
         'LKR ${item.totalPrice.toStringAsFixed(2)}',
