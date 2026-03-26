@@ -31,8 +31,8 @@ class ReceiptService {
         pageFormat: PdfPageFormat.roll80.copyWith(
           marginTop: 5 * PdfPageFormat.mm,
           marginBottom: 5 * PdfPageFormat.mm,
-          marginLeft: 5 * PdfPageFormat.mm,
-          marginRight: 5 * PdfPageFormat.mm,
+          marginLeft:PdfPageFormat.mm,
+          marginRight: 10 * PdfPageFormat.mm,
         ),
         build: (pw.Context context) {
           return pw.Column(
@@ -149,7 +149,7 @@ class ReceiptService {
               pw.SizedBox(height: 10),
               pw.Divider(thickness: 0.5, borderStyle: pw.BorderStyle.dashed),
               pw.SizedBox(height: 6),
-              pw.Text('© ElaraPOS Retailers', style: const pw.TextStyle(fontSize: 9)),
+              pw.Text('© ElaraPOS by Eriline', style: const pw.TextStyle(fontSize: 9)),
             ],
           );
         },
