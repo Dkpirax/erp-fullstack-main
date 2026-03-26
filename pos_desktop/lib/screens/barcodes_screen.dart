@@ -81,7 +81,7 @@ class _BarcodesScreenState extends State<BarcodesScreen> {
 
     final labelFormat = PdfPageFormat(
       50 * PdfPageFormat.mm,
-      28 * PdfPageFormat.mm, // 25mm label + 3mm gap
+      25 * PdfPageFormat.mm,
     );
 
     for (var data in labelsToPrint) {
@@ -108,7 +108,7 @@ class _BarcodesScreenState extends State<BarcodesScreen> {
                 children: [
                   pw.Text(
                     prod.name,
-                    style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
+                    style: pw.TextStyle(fontSize: 6.5, fontWeight: pw.FontWeight.bold),
                     maxLines: 1,
                     overflow: pw.TextOverflow.clip,
                   ),
@@ -117,13 +117,13 @@ class _BarcodesScreenState extends State<BarcodesScreen> {
                     pw.SizedBox(height: 1),
                     pw.Text(
                       '${discount.toInt()}% OFF',
-                      style: pw.TextStyle(fontSize: 7, color: PdfColors.red, fontWeight: pw.FontWeight.bold),
+                      style: pw.TextStyle(fontSize: 6.5, color: PdfColors.red, fontWeight: pw.FontWeight.bold),
                     ),
                   ],
 
                   pw.SizedBox(height: 1),
                   pw.SizedBox(
-                    height: 8 * PdfPageFormat.mm,
+                    height: 7 * PdfPageFormat.mm,
                     child: pw.BarcodeWidget(
                       barcode: pw.Barcode.code128(),
                       data: barcodeData,
@@ -139,7 +139,7 @@ class _BarcodesScreenState extends State<BarcodesScreen> {
                     children: [
                       pw.Text(
                         '${prod.size ?? ""} ${prod.sizeNumeric ?? ""}'.trim(),
-                        style: pw.TextStyle(fontSize: 7),
+                        style: pw.TextStyle(fontSize: 6.5),
                       ),
                       if (discount > 0)
                         pw.Column(
@@ -147,18 +147,18 @@ class _BarcodesScreenState extends State<BarcodesScreen> {
                           children: [
                             pw.Text(
                               'LKR ${prod.price.toStringAsFixed(0)}',
-                              style: pw.TextStyle(fontSize: 5, color: PdfColors.grey, decoration: pw.TextDecoration.lineThrough),
+                              style: pw.TextStyle(fontSize: 4.5, color: PdfColors.grey, decoration: pw.TextDecoration.lineThrough),
                             ),
                             pw.Text(
                               'LKR ${discountedPrice.toStringAsFixed(0)}',
-                              style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+                              style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
                             ),
                           ],
                         )
                       else
                         pw.Text(
                           'LKR ${prod.price.toStringAsFixed(0)}',
-                          style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold),
+                          style: pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold),
                         ),
                     ],
                   ),
