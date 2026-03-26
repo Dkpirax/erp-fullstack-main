@@ -41,13 +41,11 @@ class ReceiptService {
         build: (pw.Context context) {
           return pw.Container(
             width: double.infinity,
-            child: pw.Padding(
-              padding: const pw.EdgeInsets.only(left: 1 * PdfPageFormat.mm),
-              child: pw.Container(
-                width: 72 * PdfPageFormat.mm,
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
-                  children: [
+            child: pw.Container(
+              width: 58 * PdfPageFormat.mm,
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.center,
+                children: [
                   // 1. Logo
                   if (logoImage != null) ...[
                     pw.SizedBox(height: 2),
@@ -92,10 +90,10 @@ class ReceiptService {
                   // 8. Itemized List Table (Max Control for 80mm roll)
                   pw.Table(
                     columnWidths: {
-                      0: const pw.FixedColumnWidth(28 * PdfPageFormat.mm),
+                      0: const pw.FixedColumnWidth(18 * PdfPageFormat.mm),
                       1: const pw.FixedColumnWidth(10 * PdfPageFormat.mm),
-                      2: const pw.FixedColumnWidth(17 * PdfPageFormat.mm),
-                      3: const pw.FixedColumnWidth(17 * PdfPageFormat.mm),
+                      2: const pw.FixedColumnWidth(15 * PdfPageFormat.mm),
+                      3: const pw.FixedColumnWidth(15 * PdfPageFormat.mm),
                     },
                     defaultVerticalAlignment: pw.TableCellVerticalAlignment.top,
                     children: [
@@ -105,22 +103,10 @@ class ReceiptService {
                           border: pw.Border(bottom: pw.BorderSide(width: 0.5)),
                         ),
                         children: [
-                          pw.Padding(
-                            padding: const pw.EdgeInsets.symmetric(vertical: 2),
-                            child: pw.Text('Product', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.5)),
-                          ),
-                          pw.Padding(
-                            padding: const pw.EdgeInsets.symmetric(vertical: 2),
-                            child: pw.Text('Dis%', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.5)),
-                          ),
-                          pw.Padding(
-                            padding: const pw.EdgeInsets.symmetric(vertical: 2),
-                            child: pw.Text('Dis Price', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.5)),
-                          ),
-                          pw.Padding(
-                            padding: const pw.EdgeInsets.only(right: 0.5 * PdfPageFormat.mm, top: 2, bottom: 2),
-                            child: pw.Text('Amount', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.5)),
-                          ),
+                          pw.Text('Product', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.5)),
+                          pw.Text('Dis%', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.5)),
+                          pw.Text('Dis Price', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.5)),
+                          pw.Text('Amount', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.5)),
                         ],
                       ),
                       
@@ -129,44 +115,32 @@ class ReceiptService {
                         final discountedPrice = item.product.price * (1 - item.itemDiscountPercent / 100);
                         return pw.TableRow(
                           children: [
-                            pw.Padding(
-                              padding: const pw.EdgeInsets.symmetric(vertical: 2),
-                              child: pw.Column(
-                                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                                children: [
-                                  pw.Text(item.product.name, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.7)),
-                                  pw.Text(
-                                    '${item.quantity} X LKR ${currencyFormat.format(item.product.price)}',
-                                    style: const pw.TextStyle(fontSize: 7.2, color: PdfColors.grey700),
-                                  ),
-                                ],
-                              ),
+                            pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text(item.product.name, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.7)),
+                                pw.Text(
+                                  '${item.quantity} X LKR ${currencyFormat.format(item.product.price)}',
+                                  style: const pw.TextStyle(fontSize: 7.2, color: PdfColors.grey700),
+                                ),
+                              ],
                             ),
-                            pw.Padding(
-                              padding: const pw.EdgeInsets.symmetric(vertical: 2),
-                              child: pw.Text(
-                                item.itemDiscountPercent > 0 ? '${item.itemDiscountPercent.toInt()}%' : '-',
-                                textAlign: pw.TextAlign.center, 
-                                style: const pw.TextStyle(fontSize: 8.7),
-                              ),
+                            pw.Text(
+                              item.itemDiscountPercent > 0 ? '${item.itemDiscountPercent.toInt()}%' : '-',
+                              textAlign: pw.TextAlign.center, 
+                              style: const pw.TextStyle(fontSize: 8.7),
                             ),
-                            pw.Padding(
-                              padding: const pw.EdgeInsets.symmetric(vertical: 2),
-                              child: pw.Text(
-                                item.itemDiscountPercent > 0 ? currencyFormat.format(discountedPrice) : '-',
-                                textAlign: pw.TextAlign.right, 
-                                style: const pw.TextStyle(fontSize: 8.7),
-                              ),
+                            pw.Text(
+                              item.itemDiscountPercent > 0 ? currencyFormat.format(discountedPrice) : '-',
+                              textAlign: pw.TextAlign.right, 
+                              style: const pw.TextStyle(fontSize: 8.7),
                             ),
-                            pw.Padding(
-                              padding: const pw.EdgeInsets.only(right: 0.5 * PdfPageFormat.mm, top: 2, bottom: 2),
-                              child: pw.Text(
-                                currencyFormat.format(item.totalPrice),
-                                textAlign: pw.TextAlign.right, 
-                                maxLines: 1,
-                                overflow: pw.TextOverflow.clip,
-                                style: const pw.TextStyle(fontSize: 8.7),
-                              ),
+                            pw.Text(
+                              currencyFormat.format(item.totalPrice),
+                              textAlign: pw.TextAlign.right, 
+                              maxLines: 1,
+                              overflow: pw.TextOverflow.clip,
+                              style: const pw.TextStyle(fontSize: 8.7),
                             ),
                           ],
                         );
@@ -211,15 +185,12 @@ class ReceiptService {
                   pw.Divider(thickness: 1, color: PdfColors.black),
                   
                   // 15. TOTAL
-                  pw.Padding(
-                    padding: const pw.EdgeInsets.symmetric(vertical: 4),
-                    child: pw.Row(
-                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                      children: [
-                        pw.Text('TOTAL', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11.7)),
-                        pw.Text('LKR ${currencyFormat.format(order.total)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11.7)),
-                      ],
-                    ),
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('TOTAL', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11.7)),
+                      pw.Text('LKR ${currencyFormat.format(order.total)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11.7)),
+                    ],
                   ),
                   
                   // 16. Solid divider
@@ -258,8 +229,7 @@ class ReceiptService {
                 ],
               ),
             ),
-          ),
-        );
+          );
 
         },
       ),
