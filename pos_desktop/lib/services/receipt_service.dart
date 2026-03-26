@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart' show BuildContext;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -38,14 +37,17 @@ class ReceiptService {
     pdf.addPage(
       pw.Page(
         pageFormat: PdfPageFormat.roll80.copyWith(marginBottom: 5 * PdfPageFormat.mm),
+        margin: pw.EdgeInsets.zero, // This removes the default gap!
         build: (pw.Context context) {
           return pw.Container(
             width: double.infinity,
-            child: pw.ConstrainedBox(
-              constraints: const pw.BoxConstraints(maxWidth: 72 * PdfPageFormat.mm),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.center,
-                children: [
+            child: pw.Padding(
+              padding: const pw.EdgeInsets.only(left: 1 * PdfPageFormat.mm),
+              child: pw.Container(
+                width: 72 * PdfPageFormat.mm,
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  children: [
                   // 1. Logo
                   if (logoImage != null) ...[
                     pw.SizedBox(height: 2),
@@ -56,85 +58,121 @@ class ReceiptService {
                   pw.SizedBox(height: 2),
                   pw.Text(
                     'Ahu Mens',
-                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 16),
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14.7),
                   ),
                   
                   // 3. Address
                   pw.Text(
                     '427A/1 Main Street, Maruthamunai',
-                    style: const pw.TextStyle(fontSize: 10),
+                    style: const pw.TextStyle(fontSize: 9.2),
                   ),
                   
                   // 4. Phone
                   pw.Text(
                     '072 464 4200',
-                    style: const pw.TextStyle(fontSize: 10),
+                    style: const pw.TextStyle(fontSize: 9.2),
                   ),
                   
                   // 5. Date + Time
                   pw.Text(
                     dateStr,
-                    style: const pw.TextStyle(fontSize: 10),
+                    style: const pw.TextStyle(fontSize: 9.2),
                   ),
                   
                   // 6. Bill No
                   pw.Text(
                     'Bill No # ${order.id}',
-                    style: const pw.TextStyle(fontSize: 10),
+                    style: const pw.TextStyle(fontSize: 9.2),
                   ),
                   
                   // 7. Solid divider line
                   pw.SizedBox(height: 8),
                   pw.Divider(thickness: 1, color: PdfColors.black),
                   
-                  // 8. Column headers row
-                  pw.Row(
+                  // 8. Itemized List Table (Max Control for 80mm roll)
+                  pw.Table(
+                    columnWidths: {
+                      0: const pw.FixedColumnWidth(28 * PdfPageFormat.mm),
+                      1: const pw.FixedColumnWidth(10 * PdfPageFormat.mm),
+                      2: const pw.FixedColumnWidth(17 * PdfPageFormat.mm),
+                      3: const pw.FixedColumnWidth(17 * PdfPageFormat.mm),
+                    },
+                    defaultVerticalAlignment: pw.TableCellVerticalAlignment.top,
                     children: [
-                      pw.Expanded(flex: 4, child: pw.Text('Product', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10))),
-                      pw.Expanded(flex: 2, child: pw.Text('Dis%', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10))),
-                      pw.Expanded(flex: 3, child: pw.Text('Dis Price', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10))),
-                      pw.Expanded(flex: 3, child: pw.Text('Amount', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10))),
-                    ],
-                  ),
-                  
-                  // 9. Thin divider
-                  pw.Divider(thickness: 0.5, color: PdfColors.black),
-                  
-                  // 10. For EACH item
-                  ...order.items.map((item) {
-                    return pw.Padding(
-                      padding: const pw.EdgeInsets.symmetric(vertical: 2),
-                      child: pw.Column(
+                      // 9. Header TableRow
+                      pw.TableRow(
+                        decoration: const pw.BoxDecoration(
+                          border: pw.Border(bottom: pw.BorderSide(width: 0.5)),
+                        ),
                         children: [
-                          pw.Row(
-                            children: [
-                              pw.Expanded(
-                                flex: 4,
-                                child: pw.Text(item.product.name, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
-                              ),
-                              pw.Expanded(
-                                flex: 2,
-                                child: pw.Text('${item.itemDiscountPercent.toInt()}%', textAlign: pw.TextAlign.center, style: const pw.TextStyle(fontSize: 10)),
-                              ),
-                                               pw.Expanded(flex: 2, child: pw.Text('Dis%', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10))),
-
-                            ],
+                          pw.Padding(
+                            padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                            child: pw.Text('Product', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.5)),
                           ),
-                          // Row 2: Quantity row
-                          pw.Row(
-                            children: [
-                              pw.Expanded(
-                                child: pw.Text(
-                                  '${item.quantity} X LKR ${currencyFormat.format(item.product.price)}',
-                                  style: pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
-                                ),
-                              ),
-                            ],
+                          pw.Padding(
+                            padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                            child: pw.Text('Dis%', textAlign: pw.TextAlign.center, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.5)),
+                          ),
+                          pw.Padding(
+                            padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                            child: pw.Text('Dis Price', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.5)),
+                          ),
+                          pw.Padding(
+                            padding: const pw.EdgeInsets.only(right: 0.5 * PdfPageFormat.mm, top: 2, bottom: 2),
+                            child: pw.Text('Amount', textAlign: pw.TextAlign.right, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.5)),
                           ),
                         ],
                       ),
-                    );
-                  }).toList(),
+                      
+                      // 10. Data TableRows
+                      ...order.items.map((item) {
+                        final discountedPrice = item.product.price * (1 - item.itemDiscountPercent / 100);
+                        return pw.TableRow(
+                          children: [
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                              child: pw.Column(
+                                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                                children: [
+                                  pw.Text(item.product.name, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8.7)),
+                                  pw.Text(
+                                    '${item.quantity} X LKR ${currencyFormat.format(item.product.price)}',
+                                    style: const pw.TextStyle(fontSize: 7.2, color: PdfColors.grey700),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                              child: pw.Text(
+                                item.itemDiscountPercent > 0 ? '${item.itemDiscountPercent.toInt()}%' : '-',
+                                textAlign: pw.TextAlign.center, 
+                                style: const pw.TextStyle(fontSize: 8.7),
+                              ),
+                            ),
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.symmetric(vertical: 2),
+                              child: pw.Text(
+                                item.itemDiscountPercent > 0 ? currencyFormat.format(discountedPrice) : '-',
+                                textAlign: pw.TextAlign.right, 
+                                style: const pw.TextStyle(fontSize: 8.7),
+                              ),
+                            ),
+                            pw.Padding(
+                              padding: const pw.EdgeInsets.only(right: 0.5 * PdfPageFormat.mm, top: 2, bottom: 2),
+                              child: pw.Text(
+                                currencyFormat.format(item.totalPrice),
+                                textAlign: pw.TextAlign.right, 
+                                maxLines: 1,
+                                overflow: pw.TextOverflow.clip,
+                                style: const pw.TextStyle(fontSize: 8.7),
+                              ),
+                            ),
+                          ],
+                        );
+                      }),
+                    ],
+                  ),
                   
                   // 11. Dashed divider
                   pw.SizedBox(height: 4),
@@ -145,8 +183,8 @@ class ReceiptService {
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Text('Sub Total :', style: const pw.TextStyle(fontSize: 10)),
-                      pw.Text('LKR ${currencyFormat.format(order.subtotal)}', style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text('Sub Total :', style: const pw.TextStyle(fontSize: 8.7)),
+                      pw.Text('LKR ${currencyFormat.format(order.subtotal)}', style: const pw.TextStyle(fontSize: 8.7)),
                     ],
                   ),
                   
@@ -158,11 +196,11 @@ class ReceiptService {
                       children: [
                         pw.Text(
                           'Cart Discount ${(order.discount / (order.subtotal + 0.0001) * 100).toStringAsFixed(0)}%:',
-                          style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+                          style: pw.TextStyle(fontSize: 8.7, color: PdfColors.grey700),
                         ),
                         pw.Text(
                           'LKR ${currencyFormat.format(order.discount)}',
-                          style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700),
+                          style: pw.TextStyle(fontSize: 8.7, color: PdfColors.grey700),
                         ),
                       ],
                     ),
@@ -178,8 +216,8 @@ class ReceiptService {
                     child: pw.Row(
                       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                       children: [
-                        pw.Text('TOTAL', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 13)),
-                        pw.Text('LKR ${currencyFormat.format(order.total)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 13)),
+                        pw.Text('TOTAL', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11.7)),
+                        pw.Text('LKR ${currencyFormat.format(order.total)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11.7)),
                       ],
                     ),
                   ),
@@ -188,26 +226,26 @@ class ReceiptService {
                   pw.Divider(thickness: 1, color: PdfColors.black),
                   
                   // 17. Payment
-                  pw.SizedBox(height: 4),
+                  pw.SizedBox(height: 3),
                   pw.Row(
                     mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                     children: [
-                      pw.Text('Payment :', style: const pw.TextStyle(fontSize: 10)),
-                      pw.Text(order.paymentMethod, style: const pw.TextStyle(fontSize: 10)),
+                      pw.Text('Payment :', style: const pw.TextStyle(fontSize: 8.7)),
+                      pw.Text(order.paymentMethod, style: const pw.TextStyle(fontSize: 8.7)),
                     ],
                   ),
                   
                   // 18. Large blank space
-                  pw.SizedBox(height: 30),
+                  pw.SizedBox(height: 25),
                   
                   // 19. Dashed divider
                   pw.Divider(thickness: 0.5, borderStyle: pw.BorderStyle.dashed),
                   
                   // 20, 21, 22. Footer text
                   pw.SizedBox(height: 5),
-                  pw.Text('Thank you for your purchase!', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
-                  pw.Text('Returns within 4 days with receipt', style: pw.TextStyle(fontSize: 8, fontStyle: pw.FontStyle.italic)),
-                  pw.Text('Please come again', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10)),
+                  pw.Text('Thank you for your purchase!', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10.7)),
+                  pw.Text('Returns within 4 days with receipt', style: pw.TextStyle(fontSize: 9.7, fontStyle: pw.FontStyle.italic)),
+                  pw.Text('Please come again', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9.7)),
                   
                   // 23. Dashed divider
                   pw.SizedBox(height: 5),
@@ -220,7 +258,8 @@ class ReceiptService {
                 ],
               ),
             ),
-          );
+          ),
+        );
 
         },
       ),
@@ -267,6 +306,7 @@ class ReceiptService {
   /// Shows a print preview dialog for the given [order].
   static Future<void> showPrintPreview(dynamic context, OrderModel order) async {
     await Printing.layoutPdf(
+      format: PdfPageFormat.roll80,
       onLayout: (PdfPageFormat format) async => await generateReceiptPdf(order, format),
       name: 'Receipt_${order.id}',
     );
